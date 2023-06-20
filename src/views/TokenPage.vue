@@ -29,7 +29,6 @@ export default {
                 .updateToken(5)
                 .then(() => {
                   this.token = keycloak.token
-                  // Отправка токена для вывода на странице
                   this.receivedToken = this.token
                 })
                 .catch((error) => {
