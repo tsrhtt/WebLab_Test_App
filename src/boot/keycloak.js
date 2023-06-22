@@ -1,6 +1,6 @@
 import Keycloak from 'keycloak-js'
+import { boot } from 'quasar/wrappers'
 
-export default function () {
   const keycloakConfig = {
     url: process.env.KEYCLOAK_HOST,
     realm: process.env.KEYCLOAK_REALM,
@@ -8,13 +8,12 @@ export default function () {
     onLoad: process.env.KEYCLOAK_ON_LOAD
   }
 
-  localStorage.removeItem('token')
-
   const keycloak = new Keycloak(keycloakConfig)
 
-  return new Promise((resolve, reject) => {
-    keycloak
-      .init({ onLoad: keycloakConfig.onLoad })
+  export default boot(({ app, router, store }) => {
+    localStorage.removeItem('token')
+    return new Promise((resolve, reject) => {
+    keycloak.init({ onLoad: keycloakConfig.onLoad })
       .then((authenticated) => {
         if (authenticated) {
           resolve(keycloak)
@@ -25,6 +24,8 @@ export default function () {
       .catch((error) => {
         reject(error)
       })
+      localStorage.setItem('token', keycloak.token)
   })
-}
+})
 
+export { keycloak }
