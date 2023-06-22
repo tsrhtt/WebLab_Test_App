@@ -11,14 +11,13 @@ import { boot } from 'quasar/wrappers'
   const keycloak = new Keycloak(keycloakConfig)
 
   export default boot(({ app, router, store }) => {
-    localStorage.removeItem('token')
     return new Promise((resolve, reject) => {
     keycloak.init({ onLoad: keycloakConfig.onLoad })
       .then((authenticated) => {
         if (authenticated) {
           resolve(keycloak)
         } else {
-          reject(new Error('User authentication failed'))
+          window.location.reload();
         }
       })
       .catch((error) => {
