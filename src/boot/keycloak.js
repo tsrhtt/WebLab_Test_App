@@ -11,8 +11,8 @@ import { boot } from 'quasar/wrappers'
   const keycloak = new Keycloak(keycloakConfig)
 
   export default boot(({ app, router, store }) => {
-    return new Promise((resolve, reject) => {
-    keycloak.init({ onLoad: keycloakConfig.onLoad })
+    return new Promise(async (resolve, reject) => {
+    await keycloak.init({ onLoad: keycloakConfig.onLoad })
       .then((authenticated) => {
         if (authenticated) {
           resolve(keycloak)
@@ -24,6 +24,7 @@ import { boot } from 'quasar/wrappers'
         reject(error)
       })
       localStorage.setItem('token', keycloak.token)
+      resolve()
   })
 })
 

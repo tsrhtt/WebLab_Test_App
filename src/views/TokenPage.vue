@@ -2,10 +2,12 @@
   <div>
     <h1>Token Page</h1>
     <div v-if="error" class="error">{{ error }}</div>
-    <div v-else-if="!receivedToken" class="loading">Loading...</div>
-    <div v-else class="success">Token: {{ receivedToken }}</div>
+    <div v-else-if="loading" class="loading">Loading...</div>
+    <div v-else class="success" v-html="'Token: ' + receivedToken"></div>
   </div>
 </template>
+
+
 
 
 <script>
@@ -15,20 +17,23 @@ export default {
   data() {
     return {
       error: null,
-      receivedToken: null
+      receivedToken: null,
+      loading: true
     }
   },
-  async mounted() {
+  async beforeMount() {
     try {
       const keycloakInstance = await keycloak
       this.receivedToken = keycloakInstance.token
+      this.loading = false
     } catch (error) {
       this.error = error.message
+      this.loading = false
     }
   }
-
 }
 </script>
+
 
 
 <style scoped>
