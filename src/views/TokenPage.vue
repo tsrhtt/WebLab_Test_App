@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>Token Page</h1>
+    <h1>Hello, here's your info!</h1>
     <div v-if="error" class="error">{{ error }}</div>
     <div v-else-if="loading" class="loading">Loading...</div>
     <div v-else>
