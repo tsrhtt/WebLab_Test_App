@@ -1,21 +1,21 @@
 import Keycloak from 'keycloak-js'
 import { boot } from 'quasar/wrappers'
 
-  const keycloakConfig = {
-    url: process.env.KEYCLOAK_HOST,
-    realm: process.env.KEYCLOAK_REALM,
-    clientId: process.env.KEYCLOAK_CLIENT_ID,
-    onLoad: process.env.KEYCLOAK_ON_LOAD
-  }
+const keycloakConfig = {
+  url: process.env.KEYCLOAK_HOST,
+  realm: process.env.KEYCLOAK_REALM,
+  clientId: process.env.KEYCLOAK_CLIENT_ID,
+  onLoad: process.env.KEYCLOAK_ON_LOAD
+}
 
-  const keycloak = new Keycloak(keycloakConfig)
+const keycloak = new Keycloak(keycloakConfig)
 
-  export default boot(({ app, router, store }) => {
-    return new Promise(async (resolve, reject) => {
-    await keycloak.init({ onLoad: keycloakConfig.onLoad })
+export default boot(({ app, router, store }) => {
+  return new Promise(async (resolve, reject) => {
+    await keycloak.init({ onLoad: keycloakConfig.onLoad, checkLoginIframe: false })
       .then((authenticated) => {
         if (authenticated) {
-          resolve(keycloak)
+          console.log("Authenticated");
         } else {
           window.location.reload();
         }
@@ -23,8 +23,15 @@ import { boot } from 'quasar/wrappers'
       .catch((error) => {
         reject(error)
       })
-      localStorage.setItem('token', keycloak.token)
-      resolve()
+
+    // Распарсивание токена и сохранение информации о пользователе
+    const userInfo = {
+      user: keycloak.tokenParsed.preferred_username,
+      fullName: keycloak.tokenParsed.name
+    }
+    localStorage.setItem('userInfo', JSON.stringify(userInfo))
+
+    resolve()
   })
 })
 
