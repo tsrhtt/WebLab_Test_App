@@ -13,16 +13,30 @@
           <th>Full Name</th>
           <td>{{ userInfo.fullName }}</td>
         </tr>
+        <tr>
+          <th>User Group</th>
+          <td>
+            <span v-for="(group, index) in userInfo.userGroup" :key="index">
+              {{ group }}
+              <span v-if="index < userInfo.userGroup.length - 1">, </span>
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <th>Client URL</th>
+          <td>
+            <span v-for="(url, index) in userInfo.clientURL" :key="index">
+              {{ url }}
+              <span v-if="index < userInfo.clientURL.length - 1">, </span>
+            </span>
+          </td>
+        </tr>
       </table>
     </div>
   </div>
 </template>
 
-
 <script>
-import keycloak from '../boot/keycloak'
-
-
 export default {
   data() {
     return {
@@ -45,8 +59,6 @@ export default {
   }
 }
 </script>
-
-
 
 <style scoped>
 .user-info-table {
