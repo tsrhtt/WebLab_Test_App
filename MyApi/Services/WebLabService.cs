@@ -1,43 +1,39 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using RestSharp;
-using RestSharp.Authenticators;
+using System.Net.Http;
 
 namespace MyApi.Services
 {
-    public class WebLabService
+    public class WebLabService : IWebLabService
     {
-        private readonly string _baseUrl = "https://web-lab-api.com"; // Replace with the actual base URL
-        private readonly string _clientId = "placeholder"; // Replace with the actual client ID
-        private readonly string _clientSecret = "placeholder"; // Replace with the actual client secret
-        private readonly string _authUrl = "https://keycloak.com"; // Replace with the actual auth URL
+        private readonly HttpClient _client;
 
-        private readonly RestClient _client;
-
-        public WebLabService()
+        public WebLabService(HttpClient client)
         {
-        _client = new RestClient(_baseUrl);
-        _client.Authenticator = new JwtAuthenticator(_authUrl, _clientId, _clientSecret);
+            _client = client;
         }
 
-        public async Task<string> GetDirectionsAsync()
+        public async Task<LabData> GetLabData()
         {
-            var request = new RestRequest("directions", Method.GET); // Replace "directions" with the actual endpoint
+            // Create a request object for the resource you want to access
+            var request = new HttpRequestMessage(HttpMethod.Get, "lab-data");
 
-            var response = await _client.ExecuteAsync(request);
+            // Execute the request and get the response
+            var response = await _client.SendAsync(request);
 
-            if (response.IsSuccessful)
+            // Check if the response is successful
+            if (response.IsSuccessStatusCode)
             {
-                return response.Content;
+                // Return the data from the response
+                return await response.Content.ReadAsAsync<LabData>();
             }
             else
             {
-                return null;
+                // Handle the error
+                throw new Exception(response.ReasonPhrase);
             }
-
         }
-
-
-
     }
 }

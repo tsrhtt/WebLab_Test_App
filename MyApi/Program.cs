@@ -1,38 +1,48 @@
-var builder = WebApplication.CreateBuilder(args);
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
-builder.Services.AddSingleton<WebLabService>();
-
-
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-builder.Services.AddCors(options =>
+namespace MyApi
 {
-    options.AddDefaultPolicy(builder =>
+    public class Program
     {
-        builder.WithOrigins("http://localhost:8080")
-               .AllowAnyHeader()
-               .AllowAnyMethod();
-    });
-});
+        public static void Main(string[] args)
+        {
+            // Create a configuration object that reads from appsettings.json
+            var configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .Build();
 
+            // Get the data from the Keycloak section of the config file
+            var clientId = configuration["Keycloak:ClientId"];
+            var clientSecret = configuration["Keycloak:ClientSecret"];
+            var authority = configuration["Keycloak:Authority"];
+            var tokenUrl = configuration["Keycloak:TokenUrl"];
+            var audience = configuration["Keycloak:Audience"];
 
-var app = builder.Build();
+            // Add the JWT Bearer authentication scheme using the data from the config file
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                {
+                    options.Authority = authority;
+                    options.Audience = audience;
+                    options.RequireHttpsMetadata = false;
+                });
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
+            CreateHostBuilder(args).Build().Run();
+        }
+
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseStartup<Startup>();
+                });
+    }
 }
-
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.UseCors();
-
-app.Run();

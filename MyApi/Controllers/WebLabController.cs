@@ -1,65 +1,38 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
-using IdentityModel.Client;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using MyApi.Models;
-using Newtonsoft.Json;
 
 namespace MyApi.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    public class TestController : ControllerBase
+    [Route("[controller]")]
+    public class WebLabController : ControllerBase
     {
-        private readonly ILogger<TestController> _logger;
-        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ILogger<WebLabController> _logger;
+        private readonly IWebLabService _webLabService;
 
-        public TestController(ILogger<TestController> logger, IHttpClientFactory httpClientFactory)
+        public WebLabController(ILogger<WebLabController> logger, IWebLabService webLabService)
         {
             _logger = logger;
-            _httpClientFactory = httpClientFactory;
+            _webLabService = webLabService;
         }
 
         [HttpGet]
-        public async Task<IEnumerable<Test>> Get()
+        public async Task<IActionResult> Get()
         {
-            var tests = await GetTestsAsync();
-            return tests;
-        }
-
-        private async Task<string> GetTokenAsync()
-        {
-            var client = new HttpClient();
-            var disco = await client.GetDiscoveryDocumentAsync("https://keycloak.com"); // Need to change this to the Keycloak URL
-            if (disco.IsError) throw new Exception(disco.Error);
-
-            var tokenResponse = await client.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
+            try
             {
-                Address = disco.TokenEndpoint,
-                ClientId = "client-id", // change this to client id
-                ClientSecret = "client-secret", // change this to client secret
-                Scope = "scope" // change this to the needed scope
-            });
-
-            if (tokenResponse.IsError) throw new Exception(tokenResponse.Error);
-
-            return tokenResponse.AccessToken;
-        }
-
-        private async Task<IEnumerable<Test>> GetTestsAsync()
-        {
-            var client = _httpClientFactory.CreateClient("ThirdParty");
-            var token = await GetTokenAsync();
-            client.SetBearerToken(token);
-            var response = await client.GetAsync("/tests");
-            response.EnsureSuccessStatusCode();
-            var content = await response.Content.ReadAsStringAsync();
-            var tests = JsonConvert.DeserializeObject<IEnumerable<Test>>(content);
-            return tests;
+                var labData = await _webLabService.GetLabData();
+                return Ok(labData);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting lab data");
+                return StatusCode(500, "Internal server error");
+            }
         }
     }
 }
