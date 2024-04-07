@@ -1,48 +1,35 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
-namespace MyApi
-{
-    public class Program
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the DI container.
+var configuration = builder.Configuration;
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        public static void Main(string[] args)
-        {
-            // Create a configuration object that reads from appsettings.json
-            var configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json")
-                .Build();
+        options.Authority = configuration["Keycloak:Authority"];
+        options.Audience = configuration["Keycloak:Audience"];
+        options.RequireHttpsMetadata = false;
+    });
 
-            // Get the data from the Keycloak section of the config file
-            var clientId = configuration["Keycloak:ClientId"];
-            var clientSecret = configuration["Keycloak:ClientSecret"];
-            var authority = configuration["Keycloak:Authority"];
-            var tokenUrl = configuration["Keycloak:TokenUrl"];
-            var audience = configuration["Keycloak:Audience"];
+// Add controllers.
+builder.Services.AddControllers();
 
-            // Add the JWT Bearer authentication scheme using the data from the config file
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(options =>
-                {
-                    options.Authority = authority;
-                    options.Audience = audience;
-                    options.RequireHttpsMetadata = false;
-                });
+var app = builder.Build();
 
-            CreateHostBuilder(args).Build().Run();
-        }
-
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-                });
-    }
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
 }
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();

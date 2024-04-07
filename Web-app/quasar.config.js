@@ -27,7 +27,7 @@ module.exports = configure(function (ctx) {
     // https://v2.quasar.dev/quasar-cli-webpack/boot-files
     boot: [
       'keycloak',
-      'boot/axios',
+      'axios',
     ],
 
     // https://v2.quasar.dev/quasar-cli-webpack/quasar-config-js#Property%3A-css
@@ -55,7 +55,7 @@ module.exports = configure(function (ctx) {
       env: {
         KEYCLOAK_HOST: "https://public.ehealth.by/lab-staging/keycloak/",
         KEYCLOAK_REALM: 'laboratory',
-        KEYCLOAK_CLIENT_ID: 'dan_test_web_app',
+        KEYCLOAK_CLIENT_ID: 'dan123',
         KEYCLOAK_ON_LOAD: 'login-required'
       },
 

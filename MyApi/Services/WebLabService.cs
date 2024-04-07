@@ -12,41 +12,46 @@ namespace MyApi.Services
     public class WebLabService
     {
         private readonly HttpClient _client;
-        private readonly string _token;
+        private string? _token; // Make _token nullable
 
         public WebLabService(IConfiguration configuration)
         {
-            // Initialize the HttpClient with some settings
-            _client = new HttpClient();
-            _client.BaseAddress = new Uri("https://public.ehealth.by/lab-staging/api/integration/");
+            _client = new HttpClient
+            {
+                BaseAddress = new Uri("https://public.ehealth.by/lab-staging/api/integration/")
+            };
             _client.DefaultRequestHeaders.Accept.Clear();
             _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        }
 
-            // Make the request to the third party API to get the token
-            var request = new HttpRequestMessage(HttpMethod.Post, "https://public.ehealth.by/lab-staging/keycloak/realms/laboratory/protocol/openid-connect/token");
-            request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+        public async Task InitializeAsync(IConfiguration configuration)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://public.ehealth.by/lab-staging/keycloak/realms/laboratory/protocol/openid-connect/token")
             {
-                {"client_id", configuration["ClientId"]},
-                {"client_secret", configuration["ClientSecret"]},
-                {"grant_type", "client_credentials"}
-            });
+                Content = new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    {"client_id", configuration["Keycloak:ClientId"]}, // Adjusted for appsettings
+                    {"client_secret", configuration["Keycloak:ClientSecret"]}, // Adjusted for appsettings
+                    {"grant_type", "client_credentials"}
+                })
+            };
             var response = await _client.SendAsync(request);
             response.EnsureSuccessStatusCode();
             var content = await response.Content.ReadAsStringAsync();
             var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(content);
-            _token = tokenResponse.AccessToken;
+            _token = tokenResponse?.AccessToken; // Handle possible null deserialization
         }
 
-        public async Task<IEnumerable<Direction>> GetDirectionsAsync()
+        public async Task<IEnumerable<Direction>> GetLabData()
         {
-            // Add the access token as an Authorization header
+            if (_token == null) throw new InvalidOperationException("Service not initialized with token.");
+
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
 
-            // Make the request to the third party API to get the directions
             var response = await _client.GetAsync("direction/");
             response.EnsureSuccessStatusCode();
             var content = await response.Content.ReadAsStringAsync();
-            var directions = JsonSerializer.Deserialize<IEnumerable<Direction>>(content);
+            var directions = JsonSerializer.Deserialize<IEnumerable<Direction>>(content) ?? new List<Direction>(); // Handle possible null deserialization
             return directions;
         }
     }

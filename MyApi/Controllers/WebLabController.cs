@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using MyApi.Services;
 
 namespace MyApi.Controllers
 {
@@ -12,9 +13,9 @@ namespace MyApi.Controllers
     public class WebLabController : ControllerBase
     {
         private readonly ILogger<WebLabController> _logger;
-        private readonly IWebLabService _webLabService;
+        private readonly WebLabService _webLabService;
 
-        public WebLabController(ILogger<WebLabController> logger, IWebLabService webLabService)
+        public WebLabController(ILogger<WebLabController> logger, WebLabService webLabService)
         {
             _logger = logger;
             _webLabService = webLabService;
