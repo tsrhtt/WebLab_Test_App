@@ -1,59 +1,46 @@
 <template>
-  <q-page class="flex flex-center">
-    <div class="q-pa-md" style="max-width: 300px">
-      <q-btn label="Get tests" @click="getTests" />
-      <q-table
-        :data="tests"
-        :columns="columns"
-        row-key="name"
-        binary-state-sort
-        dense
-      />
-    </div>
-  </q-page>
+  <div>
+    <button @click="getDirections">Get Directions</button>
+    <table>
+      <thead>
+        <tr>
+          <th>Id</th>
+          <th>Card Number</th>
+          <th>Patient Full Name</th>
+          <th>Birth Date</th>
+          <th>Sex Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="direction in directions" :key="direction.id">
+          <td>{{ direction.id }}</td>
+          <td>{{ direction.cardNumber }}</td>
+          <td>{{ direction.patientFullName }}</td>
+          <td>{{ direction.birthDate }}</td>
+          <td>{{ direction.sexDescription }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </template>
 
 <script>
-import { api } from 'boot/axios';
+import axios from "axios";
 
 export default {
   data() {
     return {
-      tests: [], // array of test objects
-      columns: [
-        {
-          name: 'name',
-          required: true,
-          label: 'Name',
-          align: 'left',
-          field: row => row.name,
-          format: val => `${val}`,
-          sortable: true,
-        },
-        {
-          name: 'result',
-          required: true,
-          label: 'Result',
-          align: 'left',
-          field: row => row.result,
-          format: val => `${val}`,
-          sortable: true,
-        },
-      ],
+      directions: [],
     };
   },
   methods: {
-    getTests() {
-      api.get('/tests') // get all tests from API
-        .then(response => {
-          // handle success
-          console.log(response.data);
-          this.tests = response.data; // assign the data to the tests array
-        })
-        .catch(error => {
-          // handle error
-          console.error(error);
-        });
+    async getDirections() {
+      // Make a GET request to API to get the directions
+      const response = await axios.get(
+        "https://your-api-url.com/api/directions"
+      );
+      // Set the directions data to a local variable or state
+      this.directions = response.data;
     },
   },
 };

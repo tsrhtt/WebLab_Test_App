@@ -1,39 +1,53 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
+using MyApi.Models;
 
 namespace MyApi.Services
 {
-    public class WebLabService : IWebLabService
+    public class WebLabService
     {
         private readonly HttpClient _client;
+        private readonly string _token;
 
-        public WebLabService(HttpClient client)
+        public WebLabService(IConfiguration configuration)
         {
-            _client = client;
+            // Initialize the HttpClient with some settings
+            _client = new HttpClient();
+            _client.BaseAddress = new Uri("https://public.ehealth.by/lab-staging/api/integration/");
+            _client.DefaultRequestHeaders.Accept.Clear();
+            _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            // Make the request to the third party API to get the token
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://public.ehealth.by/lab-staging/keycloak/realms/laboratory/protocol/openid-connect/token");
+            request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                {"client_id", configuration["ClientId"]},
+                {"client_secret", configuration["ClientSecret"]},
+                {"grant_type", "client_credentials"}
+            });
+            var response = await _client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var content = await response.Content.ReadAsStringAsync();
+            var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(content);
+            _token = tokenResponse.AccessToken;
         }
 
-        public async Task<LabData> GetLabData()
+        public async Task<IEnumerable<Direction>> GetDirectionsAsync()
         {
-            // Create a request object for the resource you want to access
-            var request = new HttpRequestMessage(HttpMethod.Get, "lab-data");
+            // Add the access token as an Authorization header
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
 
-            // Execute the request and get the response
-            var response = await _client.SendAsync(request);
-
-            // Check if the response is successful
-            if (response.IsSuccessStatusCode)
-            {
-                // Return the data from the response
-                return await response.Content.ReadAsAsync<LabData>();
-            }
-            else
-            {
-                // Handle the error
-                throw new Exception(response.ReasonPhrase);
-            }
+            // Make the request to the third party API to get the directions
+            var response = await _client.GetAsync("direction/");
+            response.EnsureSuccessStatusCode();
+            var content = await response.Content.ReadAsStringAsync();
+            var directions = JsonSerializer.Deserialize<IEnumerable<Direction>>(content);
+            return directions;
         }
     }
 }

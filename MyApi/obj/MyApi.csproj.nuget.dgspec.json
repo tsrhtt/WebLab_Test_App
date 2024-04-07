@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\User\\Desktop\\API_PROJ\\MyApi\\MyApi.csproj": {}
+    "D:\\project-practice\\MyApi\\MyApi.csproj": {}
   },
   "projects": {
-    "C:\\Users\\User\\Desktop\\API_PROJ\\MyApi\\MyApi.csproj": {
+    "D:\\project-practice\\MyApi\\MyApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\User\\Desktop\\API_PROJ\\MyApi\\MyApi.csproj",
+        "projectUniqueName": "D:\\project-practice\\MyApi\\MyApi.csproj",
         "projectName": "MyApi",
-        "projectPath": "C:\\Users\\User\\Desktop\\API_PROJ\\MyApi\\MyApi.csproj",
+        "projectPath": "D:\\project-practice\\MyApi\\MyApi.csproj",
         "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\User\\Desktop\\API_PROJ\\MyApi\\obj\\",
+        "outputPath": "D:\\project-practice\\MyApi\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "E:\\Visual Studio\\Shared\\NuGetPackages"
@@ -71,7 +71,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.201\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.202\\RuntimeIdentifierGraph.json"
         }
       }
     }
