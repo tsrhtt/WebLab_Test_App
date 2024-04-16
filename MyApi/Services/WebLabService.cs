@@ -48,7 +48,7 @@ namespace MyApi.Services
 
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
 
-            var response = await _client.GetAsync("direction/");
+            var response = await _client.GetAsync("Direction/");
             response.EnsureSuccessStatusCode();
             var content = await response.Content.ReadAsStringAsync();
             var directions = JsonSerializer.Deserialize<IEnumerable<Direction>>(content) ?? new List<Direction>(); // Handle possible null deserialization
