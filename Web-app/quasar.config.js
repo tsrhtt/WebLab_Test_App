@@ -53,7 +53,7 @@ module.exports = configure(function (ctx) {
     build: {
       vueRouterMode: 'hash', // available values: 'hash', 'history'
       env: {
-        KEYCLOAK_HOST: "https://public.ehealth.by/lab-staging/keycloak/",
+        KEYCLOAK_HOST: "https://public.ehealth.by/lab-test/keycloak/",
         KEYCLOAK_REALM: 'laboratory',
         KEYCLOAK_CLIENT_ID: 'dan123',
         KEYCLOAK_ON_LOAD: 'login-required'

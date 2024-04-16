@@ -37,7 +37,7 @@ export default {
     async getDirections() {
       // Make a GET request to API to get the directions
       const response = await axios.get(
-        "https://your-api-url.com/api/directions"
+        "https://public.ehealth.by/lab-test/api/integration/Direction"
       );
       // Set the directions data to a local variable or state
       this.directions = response.data;

@@ -18,7 +18,7 @@ namespace MyApi.Services
         {
             _client = new HttpClient
             {
-                BaseAddress = new Uri("https://public.ehealth.by/lab-staging/api/integration/")
+                BaseAddress = new Uri("https://public.ehealth.by/lab-test/api/integration/")
             };
             _client.DefaultRequestHeaders.Accept.Clear();
             _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -26,7 +26,7 @@ namespace MyApi.Services
 
         public async Task InitializeAsync(IConfiguration configuration)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "https://public.ehealth.by/lab-staging/keycloak/realms/laboratory/protocol/openid-connect/token")
+            var request = new HttpRequestMessage(HttpMethod.Post, "https://public.ehealth.by/lab-test/keycloak/realms/laboratory/protocol/openid-connect/token")
             {
                 Content = new FormUrlEncodedContent(new Dictionary<string, string>
                 {
