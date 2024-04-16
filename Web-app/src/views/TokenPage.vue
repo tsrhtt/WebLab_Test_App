@@ -25,8 +25,6 @@
 </template>
 
 <script>
-import axios from "axios";
-
 export default {
   data() {
     return {
@@ -35,12 +33,14 @@ export default {
   },
   methods: {
     async getDirections() {
-      // Make a GET request to API to get the directions
-      const response = await axios.get(
-        "https://public.ehealth.by/lab-test/api/integration/Direction"
-      );
-      // Set the directions data to a local variable or state
-      this.directions = response.data;
+      try {
+        // Using the globally configured Axios instance $api
+        const response = await this.$api.get("Direction/");
+        this.directions = response.data;
+      } catch (error) {
+        console.error('Failed to fetch directions:', error);
+        alert('Failed to fetch directions. Please check the console for more details.');
+      }
     },
   },
 };

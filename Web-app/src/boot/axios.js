@@ -1,12 +1,15 @@
 import axios from 'axios';
+import { boot } from 'quasar/wrappers';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api', // need to change this to API URL later
+  baseURL: 'https://localhost:5008/api',
+  //baseURL: 'https://public.ehealth.by/lab-test/api/integration',  // for testing (no results)
   timeout: 1000,
 });
 
-export default async ({ Vue }) => {
-  Vue.prototype.$axios = axios;
-};
+export default boot(({ app }) => {
+  app.config.globalProperties.$axios = axios;
+  app.config.globalProperties.$api = api;
+});
 
 export { api };
