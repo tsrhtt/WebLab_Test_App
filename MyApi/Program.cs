@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using MyApi.Services;
+using MyApi.Factories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,7 @@ builder.Services.AddControllers();
 
 // Register WebLabService.
 builder.Services.AddScoped<WebLabService>();
+builder.Services.AddScoped<WebLabServiceFactory>();
 
 var app = builder.Build();
 

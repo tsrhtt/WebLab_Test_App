@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MyApi.Services;
+using MyApi.Factories;
 
 namespace MyApi.Controllers
 {
@@ -15,10 +16,10 @@ namespace MyApi.Controllers
         private readonly ILogger<WebLabController> _logger;
         private readonly WebLabService _webLabService;
 
-        public WebLabController(ILogger<WebLabController> logger, WebLabService webLabService)
+        public WebLabController(ILogger<WebLabController> logger, WebLabServiceFactory serviceFactory)
         {
             _logger = logger;
-            _webLabService = webLabService;
+            _webLabService = serviceFactory.CreateAsync().Result;
         }
 
         [HttpGet("direction")]

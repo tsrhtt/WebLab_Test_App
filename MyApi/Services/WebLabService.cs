@@ -46,9 +46,18 @@ namespace MyApi.Services
         {
             if (_token == null) throw new InvalidOperationException("Service not initialized with token.");
 
+            // Log the token value
+            Console.WriteLine($"Token: {_token}");
+
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
 
             var response = await _client.GetAsync("Direction/");
+            if (!response.IsSuccessStatusCode)
+            {
+                // Log the response status code and content
+                var responseContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Request failed with status code {response.StatusCode}: {responseContent}");
+            }
             response.EnsureSuccessStatusCode();
             var content = await response.Content.ReadAsStringAsync();
             var directions = JsonSerializer.Deserialize<IEnumerable<Direction>>(content) ?? new List<Direction>(); // Handle possible null deserialization
