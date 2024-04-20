@@ -35,7 +35,7 @@ export default {
     async getDirections() {
       try {
         // Using the globally configured Axios instance $api
-        const response = await this.$api.get("Direction/");
+        const response = await this.$api.get("direction");
         this.directions = response.data;
       } catch (error) {
         console.error('Failed to fetch directions:', error);

@@ -21,7 +21,7 @@ namespace MyApi.Controllers
             _webLabService = webLabService;
         }
 
-        [HttpGet]
+        [HttpGet("direction")]
         public async Task<IActionResult> Get()
         {
             try
