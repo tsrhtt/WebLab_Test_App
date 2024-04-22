@@ -8,22 +8,23 @@ const api = axios.create({
 });
 
 export default boot(({ app }) => {
-    api.interceptors.request.use(
-    (config) => {
-      console.log("111")
-      const token = localStorage.getItem('token');
-      console.log(token)
-      if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`;
-      }
-      return config;
-    },
-    (error) => {
-      Promise.reject(error);
-    }
-  );
   app.config.globalProperties.$axios = axios;
   app.config.globalProperties.$api = api;
 });
+
+axios.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    console.log(token)
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    Promise.reject(error);
+  }
+);
+
 
 export { api };

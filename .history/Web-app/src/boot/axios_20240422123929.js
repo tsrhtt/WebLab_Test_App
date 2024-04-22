@@ -8,7 +8,9 @@ const api = axios.create({
 });
 
 export default boot(({ app }) => {
-    api.interceptors.request.use(
+  app.config.globalProperties.$axios = axios;
+  app.config.globalProperties.$api = api;
+  api.interceptors.request.use(
     (config) => {
       console.log("111")
       const token = localStorage.getItem('token');
@@ -22,8 +24,6 @@ export default boot(({ app }) => {
       Promise.reject(error);
     }
   );
-  app.config.globalProperties.$axios = axios;
-  app.config.globalProperties.$api = api;
 });
 
 export { api };

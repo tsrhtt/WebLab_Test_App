@@ -7,21 +7,21 @@ const api = axios.create({
   timeout: 1000,
 });
 
-export default boot(({ app }) => {
-    api.interceptors.request.use(
-    (config) => {
-      console.log("111")
-      const token = localStorage.getItem('token');
-      console.log(token)
-      if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`;
-      }
-      return config;
-    },
-    (error) => {
-      Promise.reject(error);
+axios.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    console.log(token)
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
     }
-  );
+    return config;
+  },
+  (error) => {
+    Promise.reject(error);
+  }
+);
+
+export default boot(({ app }) => {
   app.config.globalProperties.$axios = axios;
   app.config.globalProperties.$api = api;
 });

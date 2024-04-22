@@ -24,10 +24,6 @@ export default boot(({ app, router, store }) => {
         reject(error)
       })
 
-    const token = keycloak.token;
-
-    console.log(token)
-
     // Распарсивание токена и сохранение информации о пользователе
     const userInfo = {
       user: keycloak.tokenParsed.preferred_username,
@@ -36,7 +32,6 @@ export default boot(({ app, router, store }) => {
       clientURL: keycloak.tokenParsed['allowed-origins'] || [] // Проверка наличия поля allowed-origins
     }
     localStorage.setItem('userInfo', JSON.stringify(userInfo))
-    localStorage.setItem('token', JSON.stringify(token))
 
     resolve()
   })
