@@ -28,18 +28,19 @@ namespace MyApi.Services
         {
             var request = new HttpRequestMessage(HttpMethod.Post, "https://public.ehealth.by/lab-test/keycloak/realms/laboratory/protocol/openid-connect/token")
             {
-                Content = new FormUrlEncodedContent(new Dictionary<string, string>
-                {
-                    {"client_id", configuration["Keycloak:ClientId"]}, // Adjusted for appsettings
-                    {"client_secret", configuration["Keycloak:ClientSecret"]}, // Adjusted for appsettings
-                    {"grant_type", "client_credentials"}
-                })
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                {"client_id", configuration["Keycloak:ClientId"]}, // Adjusted for appsettings
+                {"client_secret", configuration["Keycloak:ClientSecret"]}, // Adjusted for appsettings
+                {"grant_type", "client_credentials"}
+            })
             };
             var response = await _client.SendAsync(request);
             response.EnsureSuccessStatusCode();
             var content = await response.Content.ReadAsStringAsync();
             var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(content);
             _token = tokenResponse?.AccessToken; // Handle possible null deserialization
+            Console.WriteLine($"Access token: {_token}"); // Log the access token value
         }
 
         public async Task<IEnumerable<Direction>> GetLabData()
@@ -50,6 +51,7 @@ namespace MyApi.Services
             Console.WriteLine($"Token: {_token}");
 
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
+            Console.WriteLine("11111111111");
 
             var response = await _client.GetAsync("Direction/");
             if (!response.IsSuccessStatusCode)
@@ -59,6 +61,7 @@ namespace MyApi.Services
                 Console.WriteLine($"Request failed with status code {response.StatusCode}: {responseContent}");
             }
             response.EnsureSuccessStatusCode();
+            Console.WriteLine("2222222222");
             var content = await response.Content.ReadAsStringAsync();
             var directions = JsonSerializer.Deserialize<IEnumerable<Direction>>(content) ?? new List<Direction>(); // Handle possible null deserialization
             return directions;

@@ -2,13 +2,13 @@ import axios from 'axios';
 import { boot } from 'quasar/wrappers';
 
 const api = axios.create({
-  //baseURL: 'http://localhost:5008/weblab/',        //error w/ url for API
-  baseURL: 'https://public.ehealth.by/lab-test/api/integration',  // for testing (no results, 401 Unauthorized)
+  baseURL: 'http://localhost:5008/weblab',
+  //baseURL: 'https://public.ehealth.by/lab-test/api/integration', // for initial testing, does not work because of CORS
   timeout: 1000,
 });
 
 export default boot(({ app }) => {
-    api.interceptors.request.use(
+  api.interceptors.request.use(
     (config) => {
       console.log("111")
       const token = localStorage.getItem('token');

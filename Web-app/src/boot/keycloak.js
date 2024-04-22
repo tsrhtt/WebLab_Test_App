@@ -26,7 +26,7 @@ export default boot(({ app, router, store }) => {
 
     const token = keycloak.token;
 
-    console.log(token)
+    console.log(token);
 
     // Распарсивание токена и сохранение информации о пользователе
     const userInfo = {

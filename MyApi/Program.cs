@@ -25,12 +25,25 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<WebLabService>();
 builder.Services.AddScoped<WebLabServiceFactory>();
 
+// Add CORS services.
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigins",
+        builder =>
+        {
+            builder.WithOrigins("http://localhost:8080")
+                   .AllowAnyHeader()
+                   .AllowAnyMethod();
+        });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
+    app.UseCors("AllowSpecificOrigins");
 }
 
 app.UseAuthentication();
