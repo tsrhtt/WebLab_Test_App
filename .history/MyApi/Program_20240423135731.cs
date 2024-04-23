@@ -18,7 +18,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.Authority = configuration["Keycloak:Authority"];
         options.Audience = configuration["Keycloak:Audience"];
         options.RequireHttpsMetadata = false;
-        options.MetadataAddress = configuration["Keycloak:Authority"] + "/.well-known/openid-configuration";
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,

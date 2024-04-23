@@ -14,21 +14,21 @@ var configuration = builder.Configuration;
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     // AddJwtBearer options
     .AddJwtBearer(options =>
+{
+    options.Authority = configuration["Keycloak:Authority"];
+    options.Audience = configuration["Keycloak:Audience"];
+    options.RequireHttpsMetadata = false;
+    options.MetadataAddress = configuration["Keycloak:Authority"] + "/.well-known/openid-configuration";
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.Authority = configuration["Keycloak:Authority"];
-        options.Audience = configuration["Keycloak:Audience"];
-        options.RequireHttpsMetadata = false;
-        options.MetadataAddress = configuration["Keycloak:Authority"] + "/.well-known/openid-configuration";
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidAudience = configuration["Keycloak:Audience"],
-            ValidIssuer = configuration["Keycloak:Authority"],
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
-        };
-    });
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidAudience = configuration["Keycloak:Audience"],
+        ValidIssuer = configuration["Keycloak:Authority"],
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
 
 // Add controllers.
 builder.Services.AddControllers();

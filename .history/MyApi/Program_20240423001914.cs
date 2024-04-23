@@ -4,7 +4,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using MyApi.Services;
 using MyApi.Factories;
-using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,22 +11,11 @@ var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    // AddJwtBearer options
     .AddJwtBearer(options =>
     {
         options.Authority = configuration["Keycloak:Authority"];
         options.Audience = configuration["Keycloak:Audience"];
         options.RequireHttpsMetadata = false;
-        options.MetadataAddress = configuration["Keycloak:Authority"] + "/.well-known/openid-configuration";
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidAudience = configuration["Keycloak:Audience"],
-            ValidIssuer = configuration["Keycloak:Authority"],
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
-        };
     });
 
 // Add controllers.
