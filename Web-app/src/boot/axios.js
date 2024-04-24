@@ -12,9 +12,8 @@ export default boot(({ app }) => {
     (config) => {
       console.log("111")
       const token = localStorage.getItem('token');
-      console.log(token)
       if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`;
+        config.headers['Authorization'] = `Bearer ${token.replace(/"/g, '')}`;
       }
       return config;
     },
