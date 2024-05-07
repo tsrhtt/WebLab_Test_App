@@ -79,3 +79,4 @@ C:\Users\Admin\Desktop\practice-project\MyApi\obj\Debug\net6.0\refint\MyApi.dll
 C:\Users\Admin\Desktop\practice-project\MyApi\obj\Debug\net6.0\MyApi.pdb
 C:\Users\Admin\Desktop\practice-project\MyApi\obj\Debug\net6.0\MyApi.genruntimeconfig.cache
 C:\Users\Admin\Desktop\practice-project\MyApi\obj\Debug\net6.0\ref\MyApi.dll
+D:\project-practice\MyApi\bin\Debug\net6.0\Newtonsoft.Json.dll

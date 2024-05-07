@@ -25,6 +25,8 @@ namespace MyApi.Controllers
         [HttpGet("direction")]
         public async Task<IActionResult> Get()
         {
+            _logger.LogInformation("Authorization: " + Request.Headers["Authorization"]);
+            Console.WriteLine("Authorization: " + Request.Headers["Authorization"]);
             try
             {
                 var labData = await _webLabService.GetLabData();

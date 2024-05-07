@@ -36,7 +36,7 @@ export default boot(({ app, router, store }) => {
       clientURL: keycloak.tokenParsed['allowed-origins'] || [] // Проверка наличия поля allowed-origins
     }
     localStorage.setItem('userInfo', JSON.stringify(userInfo))
-    localStorage.setItem('token', JSON.stringify(token))
+    localStorage.setItem('token', token)
 
     resolve()
   })
