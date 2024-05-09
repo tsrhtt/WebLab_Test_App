@@ -5,19 +5,19 @@
       <thead>
         <tr>
           <th>Id</th>
-          <th>Card Number</th>
           <th>Patient Full Name</th>
-          <th>Birth Date</th>
           <th>Sex Description</th>
+          <th>Laboratory Name</th>
+          <th>Status</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="direction in directions" :key="direction.id">
           <td>{{ direction.id }}</td>
-          <td>{{ direction.cardNumber }}</td>
           <td>{{ direction.patientFullName }}</td>
-          <td>{{ direction.birthDate }}</td>
           <td>{{ direction.sexDescription }}</td>
+          <td>{{ direction.laboratory }}</td>
+          <td>{{ direction.directionStatus }}</td>
         </tr>
       </tbody>
     </table>
@@ -34,7 +34,6 @@ export default {
   methods: {
     async getDirections() {
       try {
-        // Using the globally configured Axios instance $api
         const response = await this.$api.get("direction");
         this.directions = response.data;
       } catch (error) {
