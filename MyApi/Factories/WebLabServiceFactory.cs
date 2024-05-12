@@ -7,12 +7,12 @@ namespace MyApi.Factories
     public class WebLabServiceFactory
     {
         private readonly IConfiguration _configuration;
-    
+
         public WebLabServiceFactory(IConfiguration configuration)
         {
             _configuration = configuration;
         }
-    
+
         public async Task<WebLabService> CreateAsync()
         {
             var service = new WebLabService(_configuration);

@@ -39,8 +39,9 @@ namespace MyApi.Services
             var response = await _client.SendAsync(request);
             response.EnsureSuccessStatusCode();
             var content = await response.Content.ReadAsStringAsync();
-            var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(content);
-            _token = tokenResponse?.AccessToken; // Handle possible null deserialization
+            //TODO: Deserialize the token response and store the access token in proper database table
+            //var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(content);
+            //_token = tokenResponse?.AccessToken; // Handle possible null deserialization
             //Console.WriteLine($"Access token: {_token}"); // Log the access token value
         }
 
