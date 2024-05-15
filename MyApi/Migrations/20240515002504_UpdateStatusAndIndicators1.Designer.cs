@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyApi.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MyApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240515002504_UpdateStatusAndIndicators1")]
+    partial class UpdateStatusAndIndicators1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -196,6 +198,7 @@ namespace MyApi.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Comment")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("DateTime")
@@ -208,6 +211,7 @@ namespace MyApi.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("UserFio")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -226,18 +230,23 @@ namespace MyApi.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("Comment")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("ReferenceRange")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Unit")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Value")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("IndicatorId", "DirectionId");

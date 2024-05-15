@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyApi.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MyApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240513210721_UpdateDatabaseSchema")]
+    partial class UpdateDatabaseSchema
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,7 +24,7 @@ namespace MyApi.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("MyApi.Models.AnalysType", b =>
+            modelBuilder.Entity("MyApi.Models.AnalysisType", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -39,7 +41,7 @@ namespace MyApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AnalysTypes");
+                    b.ToTable("AnalysisTypes");
                 });
 
             modelBuilder.Entity("MyApi.Models.Department", b =>
@@ -51,6 +53,7 @@ namespace MyApi.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -67,18 +70,19 @@ namespace MyApi.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("AcceptedBy")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("AcceptedDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("AnalysTypeFormat")
+                    b.Property<int>("AnalysisTypeFormat")
                         .HasColumnType("integer");
 
-                    b.Property<int>("AnalysTypeId")
+                    b.Property<int>("AnalysisTypeId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("AnalysTypeName")
+                    b.Property<string>("AnalysisTypeName")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -86,9 +90,11 @@ namespace MyApi.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("BioMaterialType")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Category")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("Cito")
@@ -98,6 +104,7 @@ namespace MyApi.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("DepartmentName")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("DirectionStatus")
@@ -108,12 +115,15 @@ namespace MyApi.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("DoctorBiologFio")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("DoctorFeldsherLaborantFio")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("DoctorLabDiagnosticFio")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("HasAnyResults")
@@ -123,14 +133,15 @@ namespace MyApi.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("LaborantComment")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Laboratory")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("LaboratoryId")
                         .HasColumnType("integer");
+
+                    b.Property<string>("LaboratoryName")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int?>("NumberByJournal")
                         .HasColumnType("integer");
@@ -156,6 +167,7 @@ namespace MyApi.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("SampleNumber")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("SamplingDate")
@@ -166,15 +178,17 @@ namespace MyApi.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("SamplingDoctorFio")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Sid")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AnalysTypeId")
-                        .HasDatabaseName("IX_Directions_AnalysTypeId");
+                    b.HasIndex("AnalysisTypeId")
+                        .HasDatabaseName("IX_Directions_AnalysisTypeId");
 
                     b.HasIndex("DepartmentId");
 
@@ -187,36 +201,6 @@ namespace MyApi.Migrations
                     b.ToTable("Directions");
                 });
 
-            modelBuilder.Entity("MyApi.Models.DirectionStatusHistory", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Comment")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("DateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("DirectionId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("DirectionStatusId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("UserFio")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DirectionId");
-
-                    b.ToTable("DirectionStatusHistories");
-                });
-
             modelBuilder.Entity("MyApi.Models.Indicator", b =>
                 {
                     b.Property<int>("IndicatorId")
@@ -225,21 +209,6 @@ namespace MyApi.Migrations
                     b.Property<int>("DirectionId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Comment")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ReferenceRange")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Unit")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Value")
-                        .HasColumnType("text");
-
                     b.HasKey("IndicatorId", "DirectionId");
 
                     b.HasIndex("DirectionId");
@@ -247,7 +216,7 @@ namespace MyApi.Migrations
                     b.ToTable("Indicators");
                 });
 
-            modelBuilder.Entity("MyApi.Models.LaboratoryData", b =>
+            modelBuilder.Entity("MyApi.Models.Laboratory", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -261,7 +230,7 @@ namespace MyApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("LaboratoryDatas");
+                    b.ToTable("Laboratories");
                 });
 
             modelBuilder.Entity("MyApi.Models.Patient", b =>
@@ -283,6 +252,7 @@ namespace MyApi.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("IdentificationNumber")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("Name")
@@ -312,6 +282,38 @@ namespace MyApi.Migrations
                     b.ToTable("Patients");
                 });
 
+            modelBuilder.Entity("MyApi.Models.StatusHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DateTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DirectionId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("StatusId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserFio")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DirectionId");
+
+                    b.ToTable("StatusHistories");
+                });
+
             modelBuilder.Entity("MyApi.Models.User", b =>
                 {
                     b.Property<string>("Username")
@@ -328,9 +330,9 @@ namespace MyApi.Migrations
 
             modelBuilder.Entity("MyApi.Models.Direction", b =>
                 {
-                    b.HasOne("MyApi.Models.AnalysType", "AnalysType")
+                    b.HasOne("MyApi.Models.AnalysisType", "AnalysisType")
                         .WithMany("Directions")
-                        .HasForeignKey("AnalysTypeId")
+                        .HasForeignKey("AnalysisTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -339,7 +341,7 @@ namespace MyApi.Migrations
                         .HasForeignKey("DepartmentId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("MyApi.Models.LaboratoryData", "LaboratoryData")
+                    b.HasOne("MyApi.Models.Laboratory", "Laboratory")
                         .WithMany("Directions")
                         .HasForeignKey("LaboratoryId")
                         .OnDelete(DeleteBehavior.SetNull)
@@ -351,24 +353,13 @@ namespace MyApi.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("AnalysType");
+                    b.Navigation("AnalysisType");
 
                     b.Navigation("Department");
 
-                    b.Navigation("LaboratoryData");
+                    b.Navigation("Laboratory");
 
                     b.Navigation("Patient");
-                });
-
-            modelBuilder.Entity("MyApi.Models.DirectionStatusHistory", b =>
-                {
-                    b.HasOne("MyApi.Models.Direction", "Direction")
-                        .WithMany("DirectionStatusHistory")
-                        .HasForeignKey("DirectionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Direction");
                 });
 
             modelBuilder.Entity("MyApi.Models.Indicator", b =>
@@ -382,7 +373,18 @@ namespace MyApi.Migrations
                     b.Navigation("Direction");
                 });
 
-            modelBuilder.Entity("MyApi.Models.AnalysType", b =>
+            modelBuilder.Entity("MyApi.Models.StatusHistory", b =>
+                {
+                    b.HasOne("MyApi.Models.Direction", "Direction")
+                        .WithMany("StatusHistories")
+                        .HasForeignKey("DirectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Direction");
+                });
+
+            modelBuilder.Entity("MyApi.Models.AnalysisType", b =>
                 {
                     b.Navigation("Directions");
                 });
@@ -394,12 +396,12 @@ namespace MyApi.Migrations
 
             modelBuilder.Entity("MyApi.Models.Direction", b =>
                 {
-                    b.Navigation("DirectionStatusHistory");
-
                     b.Navigation("Indicators");
+
+                    b.Navigation("StatusHistories");
                 });
 
-            modelBuilder.Entity("MyApi.Models.LaboratoryData", b =>
+            modelBuilder.Entity("MyApi.Models.Laboratory", b =>
                 {
                     b.Navigation("Directions");
                 });

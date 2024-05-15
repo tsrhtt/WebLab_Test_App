@@ -19,7 +19,15 @@ namespace MyApi.Controllers
         public WebLabController(ILogger<WebLabController> logger, WebLabServiceFactory serviceFactory)
         {
             _logger = logger;
-            _webLabService = serviceFactory.CreateAsync().Result;
+            try
+            {
+                _webLabService = serviceFactory.CreateAsync().Result;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to create WebLabService");
+                throw;
+            }
         }
 
         [HttpGet("direction")]
@@ -39,4 +47,5 @@ namespace MyApi.Controllers
             }
         }
     }
+
 }

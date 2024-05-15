@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using MyApi.Services;
 using MyApi.Factories;
+using MyApi.Data;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
@@ -12,6 +13,7 @@ using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -107,14 +109,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 Console.WriteLine("Authentication added");
 
-// Add controllers
-builder.Services.AddControllers();
+// Controllers with JSON options to handle circular references
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+        options.JsonSerializerOptions.WriteIndented = true;
+    });
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString));
 
 // Register WebLabService and WebLabServiceFactory
 builder.Services.AddScoped<WebLabService>();
 builder.Services.AddScoped<WebLabServiceFactory>();
 
-// Add CORS services.
+// Add CORS services
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigins",
