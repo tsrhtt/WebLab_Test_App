@@ -9,7 +9,6 @@ namespace MyApi.Models
         [JsonPropertyName("id")]
         public int Id { get; set; }
 
-        // This property is here to balance between JSON and database
         public int PatientId { get; set; }
 
         [JsonPropertyName("patient")]
@@ -115,9 +114,11 @@ namespace MyApi.Models
         public int? NumberByJournal { get; set; }
 
         [JsonPropertyName("directionStatusHistory")]
-        public List<DirectionStatusHistory>? DirectionStatusHistory { get; set; } // Renamed property
+        public List<DirectionStatusHistory>? DirectionStatusHistory { get; set; } = new List<DirectionStatusHistory>();
 
         [JsonPropertyName("indicators")]
-        public List<Indicator>? Indicators { get; set; }
+        public List<IndicatorGroup> IndicatorGroups { get; set; } = new List<IndicatorGroup>();
+
+        public List<Indicator> Indicators { get; set; } = new List<Indicator>();
     }
 }

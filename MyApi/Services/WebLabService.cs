@@ -6,11 +6,11 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using MyApi.Data;
-using MyApi.Models;
 using MyApi.DTOs;
+using MyApi.Models;
 
 namespace MyApi.Services
 {
@@ -80,12 +80,26 @@ namespace MyApi.Services
                 Console.WriteLine("Deserialization check:");
                 foreach (var direction in responseData?.Data ?? Enumerable.Empty<Direction>())
                 {
-                    Console.WriteLine($"ID: {direction.Id}, StatusHistories: {direction.DirectionStatusHistory?.Count}, Indicators: {direction.Indicators?.Count}");
+                    Console.WriteLine($"ID: {direction.Id}, StatusHistories: {direction.DirectionStatusHistory?.Count}, IndicatorGroups: {direction.IndicatorGroups?.Count}");
                     if (direction.DirectionStatusHistory != null)
                     {
                         foreach (var statusHistory in direction.DirectionStatusHistory)
                         {
                             Console.WriteLine($"StatusHistory ID: {statusHistory.Id}, DateTime: {statusHistory.DateTime}, DirectionStatusId: {statusHistory.DirectionStatusId}, UserFio: {statusHistory.UserFio}, Comment: {statusHistory.Comment}");
+                        }
+                    }
+                    if (direction.IndicatorGroups != null)
+                    {
+                        foreach (var indicatorGroup in direction.IndicatorGroups)
+                        {
+                            Console.WriteLine($"IndicatorGroup Key: {indicatorGroup.Key}, Indicators Count: {indicatorGroup.Value?.Count}");
+                            if (indicatorGroup.Value != null)
+                            {
+                                foreach (var indicator in indicatorGroup.Value)
+                                {
+                                    Console.WriteLine($"Indicator ID: {indicator.Id}, Name: {indicator.Name}");
+                                }
+                            }
                         }
                     }
                 }
@@ -96,7 +110,7 @@ namespace MyApi.Services
                     {
                         if (direction != null)
                         {
-                            Console.WriteLine($"Deserialized - ID: {direction.Id}, StatusHistories: {direction.DirectionStatusHistory?.Count}, Indicators: {direction.Indicators?.Count}");
+                            Console.WriteLine($"Deserialized - ID: {direction.Id}, StatusHistories: {direction.DirectionStatusHistory?.Count}, IndicatorGroups: {direction.IndicatorGroups?.Count}");
                             await HandleDirection(direction);
                         }
                     }
@@ -137,15 +151,27 @@ namespace MyApi.Services
                         UserFio = sh.UserFio,
                         Comment = sh.Comment
                     }).ToList(),
-                    Indicators = d.Indicators?.Select(i => new IndicatorDto
+                    Indicators = d.IndicatorGroups?.SelectMany(ig => ig.Value).Select(i => new IndicatorDto
                     {
-                        IndicatorId = i.IndicatorId,
-                        DirectionId = i.DirectionId,
+                        Id = i.Id,
                         Name = i.Name,
-                        Value = i.Value,
-                        Unit = i.Unit,
-                        ReferenceRange = i.ReferenceRange,
-                        Comment = i.Comment
+                        Abbreviation = i.Abbreviation,
+                        Units = i.Units,
+                        Type = i.Type,
+                        Comment = i.Comment,
+                        IsAdditional = i.IsAdditional,
+                        IsNormExist = i.IsNormExist,
+                        IsInReference = i.IsInReference,
+                        Group = i.Group,
+                        GroupOrderNumber = i.GroupOrderNumber,
+                        SortNumber = i.SortNumber,
+                        MinStandardValue = i.MinStandardValue,
+                        MaxStandardValue = i.MaxStandardValue,
+                        ResultVal = i.ResultVal,
+                        ResultStr = i.ResultStr,
+                        TextStandards = i.TextStandards,
+                        PossibleStringValues = i.PossibleStringValues,
+                        DynamicValues = i.DynamicValues
                     }).ToList(),
                     PatientFullName = d.PatientFullName,
                     Cito = d.Cito,
@@ -183,6 +209,143 @@ namespace MyApi.Services
             }
         }
 
+        public async Task<DirectionDto> GetDetailedDirection(int directionId)
+        {
+            if (_token == null) throw new InvalidOperationException("Service not initialized with token.");
+            Console.WriteLine($"Using token: {_token} for detailed data fetch.");
+
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
+            var response = await _client.GetAsync($"Direction/{directionId}");
+            Console.WriteLine($"HTTP GET request sent to {_client.BaseAddress}Direction/{directionId}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var responseContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Request failed with status code {response.StatusCode}: {responseContent}");
+                throw new HttpRequestException($"Request failed with status code {response.StatusCode}, Content: {responseContent}");
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            Console.WriteLine("JSON Response:");
+            Console.WriteLine(content);
+
+            try
+            {
+                var direction = JsonSerializer.Deserialize<Direction>(content, new JsonSerializerOptions
+                {
+                    Converters = { new DateTimeConverterHandlingUTC() }
+                });
+
+                // Debugging output
+                Console.WriteLine($"Deserialized - ID: {direction.Id}, StatusHistories: {direction.DirectionStatusHistory?.Count}, IndicatorGroups: {direction.IndicatorGroups?.Count}");
+                if (direction.IndicatorGroups != null)
+                {
+                    foreach (var indicatorGroup in direction.IndicatorGroups)
+                    {
+                        Console.WriteLine($"IndicatorGroup Key: {indicatorGroup.Key}, Indicators Count: {indicatorGroup.Value?.Count}");
+                        if (indicatorGroup.Value != null)
+                        {
+                            foreach (var indicator in indicatorGroup.Value)
+                            {
+                                Console.WriteLine($"Indicator ID: {indicator.Id}, Name: {indicator.Name}");
+                            }
+                        }
+                    }
+                }
+
+                await HandleDirection(direction);
+
+                return new DirectionDto
+                {
+                    Id = direction.Id,
+                    PatientId = direction.PatientId,
+                    Patient = new PatientDto
+                    {
+                        Id = direction.Patient.Id,
+                        IdentificationNumber = direction.Patient.IdentificationNumber,
+                        PatientId = direction.Patient.PatientId,
+                        Name = direction.Patient.Name,
+                        Surname = direction.Patient.Surname,
+                        SecondName = direction.Patient.SecondName,
+                        FullName = direction.Patient.FullName,
+                        Sex = direction.Patient.Sex,
+                        BirthDate = direction.Patient.BirthDate,
+                        SexDescription = direction.Patient.SexDescription,
+                        Age = direction.Patient.Age
+                    },
+                    LaboratoryId = direction.LaboratoryId,
+                    Laboratory = direction.Laboratory,
+                    AnalysTypeId = direction.AnalysTypeId,
+                    AnalysTypeName = direction.AnalysTypeName,
+                    AnalysTypeFormat = direction.AnalysTypeFormat,
+                    DepartmentId = direction.DepartmentId,
+                    DepartmentName = direction.DepartmentName,
+                    DirectionStatusHistory = direction.DirectionStatusHistory?.Select(sh => new DirectionStatusHistoryDto
+                    {
+                        Id = sh.Id,
+                        DirectionId = sh.DirectionId,
+                        DateTime = sh.DateTime,
+                        DirectionStatusId = sh.DirectionStatusId,
+                        UserFio = sh.UserFio,
+                        Comment = sh.Comment
+                    }).ToList(),
+                    Indicators = direction.IndicatorGroups?.SelectMany(ig => ig.Value).Select(i => new IndicatorDto
+                    {
+                        Id = i.Id,
+                        Name = i.Name,
+                        Abbreviation = i.Abbreviation,
+                        Units = i.Units,
+                        Type = i.Type,
+                        Comment = i.Comment,
+                        IsAdditional = i.IsAdditional,
+                        IsNormExist = i.IsNormExist,
+                        IsInReference = i.IsInReference,
+                        Group = i.Group,
+                        GroupOrderNumber = i.GroupOrderNumber,
+                        SortNumber = i.SortNumber,
+                        MinStandardValue = i.MinStandardValue,
+                        MaxStandardValue = i.MaxStandardValue,
+                        ResultVal = i.ResultVal,
+                        ResultStr = i.ResultStr,
+                        TextStandards = i.TextStandards,
+                        PossibleStringValues = i.PossibleStringValues,
+                        DynamicValues = i.DynamicValues
+                    }).ToList(),
+                    PatientFullName = direction.PatientFullName,
+                    Cito = direction.Cito,
+                    IsArchived = direction.IsArchived,
+                    DirectionStatus = direction.DirectionStatus,
+                    DirectionStatusId = direction.DirectionStatusId,
+                    Category = direction.Category,
+                    RequestDate = direction.RequestDate,
+                    RequestedBy = direction.RequestedBy,
+                    AcceptedDate = direction.AcceptedDate,
+                    AcceptedBy = direction.AcceptedBy,
+                    OnDate = direction.OnDate,
+                    ReadyDate = direction.ReadyDate,
+                    Sid = direction.Sid,
+                    HasAnyResults = direction.HasAnyResults,
+                    LaborantComment = direction.LaborantComment,
+                    SamplingDate = direction.SamplingDate,
+                    SamplingDateStr = direction.SamplingDateStr,
+                    SampleNumber = direction.SampleNumber,
+                    SamplingDoctorFio = direction.SamplingDoctorFio,
+                    DoctorLabDiagnosticFio = direction.DoctorLabDiagnosticFio,
+                    DoctorFeldsherLaborantFio = direction.DoctorFeldsherLaborantFio,
+                    DoctorBiologFio = direction.DoctorBiologFio,
+                    BioMaterialCount = direction.BioMaterialCount,
+                    BioMaterialType = direction.BioMaterialType,
+                    NumberByJournal = direction.NumberByJournal
+                };
+            }
+            catch (JsonException ex)
+            {
+                Console.WriteLine($"JsonException encountered: {ex.Message}");
+                throw;
+            }
+        }
+
+
         private async Task HandleDirection(Direction direction)
         {
             if (direction == null)
@@ -193,11 +356,9 @@ namespace MyApi.Services
 
             Console.WriteLine($"Processing Direction ID: {direction.Id}, Patient ID: {direction.Patient?.PatientId}, Laboratory ID: {direction.LaboratoryId}");
 
-            // Ensure collections are initialized
             direction.DirectionStatusHistory = direction.DirectionStatusHistory ?? new List<DirectionStatusHistory>();
-            direction.Indicators = direction.Indicators ?? new List<Indicator>();
+            direction.Indicators = direction.IndicatorGroups?.SelectMany(ig => ig.Value).ToList() ?? new List<Indicator>();
 
-            // Log initial data
             Console.WriteLine("Initial DirectionStatusHistory count: " + direction.DirectionStatusHistory.Count);
             Console.WriteLine("Initial Indicators count: " + direction.Indicators.Count);
 
@@ -206,25 +367,22 @@ namespace MyApi.Services
                 Console.WriteLine($"Before Saving - StatusHistory ID: {statusHistory.Id}, DateTime: {statusHistory.DateTime}, DirectionStatusId: {statusHistory.DirectionStatusId}, UserFio: {statusHistory.UserFio}, Comment: {statusHistory.Comment}");
             }
 
-            // Check if Patient exists in Patients table
             var existingPatient = await _dbContext.Patients.FindAsync(direction.Patient.Id);
             if (existingPatient == null)
             {
                 Console.WriteLine("Patient not found, adding new");
                 _dbContext.Patients.Add(direction.Patient);
-                await _dbContext.SaveChangesAsync(); // Save changes to get the PatientId populated
+                await _dbContext.SaveChangesAsync();
             }
             else
             {
                 Console.WriteLine("Patient already exists, updating existing patient");
                 _dbContext.Entry(existingPatient).CurrentValues.SetValues(direction.Patient);
-                direction.Patient = existingPatient; // Reassign the tracked entity
+                direction.Patient = existingPatient;
             }
 
-            // Ensure the PatientId is set on the Direction
             direction.PatientId = direction.Patient.Id;
 
-            // Handling Laboratory
             var dbLaboratory = await _dbContext.LaboratoryDatas.FindAsync(direction.LaboratoryId);
             if (dbLaboratory == null)
             {
@@ -238,7 +396,6 @@ namespace MyApi.Services
                 _dbContext.Entry(dbLaboratory).CurrentValues.SetValues(dbLaboratory);
             }
 
-            // Handling AnalysType
             var dbAnalysType = await _dbContext.AnalysTypes.FindAsync(direction.AnalysTypeId);
             if (dbAnalysType == null)
             {
@@ -260,7 +417,6 @@ namespace MyApi.Services
 
             Console.WriteLine($"Adding/updating AnalysisType with ID {direction.AnalysTypeId}, Name {direction.AnalysTypeName}, Format {direction.AnalysTypeFormat}");
 
-            // Handling optional Department
             if (direction.DepartmentId.HasValue)
             {
                 var dbDepartment = await _dbContext.Departments.FindAsync(direction.DepartmentId);
@@ -280,7 +436,6 @@ namespace MyApi.Services
                 }
             }
 
-            // Handling Direction
             Console.WriteLine("Handling the Direction entity...");
             var existingDirection = await _dbContext.Directions
                 .Include(d => d.DirectionStatusHistory)
@@ -297,7 +452,6 @@ namespace MyApi.Services
                 Console.WriteLine("Updating existing Direction");
                 _dbContext.Entry(existingDirection).CurrentValues.SetValues(direction);
 
-                // Clear and Add StatusHistories
                 existingDirection.DirectionStatusHistory.Clear();
                 foreach (var statusHistory in direction.DirectionStatusHistory)
                 {
@@ -313,28 +467,86 @@ namespace MyApi.Services
                     });
                 }
 
-                // Clear and Add Indicators
                 existingDirection.Indicators.Clear();
                 foreach (var indicator in direction.Indicators)
                 {
-                    Console.WriteLine($"Adding Indicator ID: {indicator.IndicatorId}");
-                    existingDirection.Indicators.Add(new Indicator
+                    Console.WriteLine($"Adding Indicator ID: {indicator.Id}");
+                    indicator.DirectionId = existingDirection.Id; // Ensure DirectionId is correctly set
+
+                    var existingIndicator = await _dbContext.Indicators
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(i => i.Id == indicator.Id && i.DirectionId == indicator.DirectionId);
+
+                    if (existingIndicator == null)
                     {
-                        IndicatorId = indicator.IndicatorId,
-                        DirectionId = indicator.DirectionId,
-                        Name = indicator.Name,
-                        Value = indicator.Value,
-                        Unit = indicator.Unit,
-                        ReferenceRange = indicator.ReferenceRange,
-                        Comment = indicator.Comment
-                    });
+                        _dbContext.Indicators.Add(indicator);
+                    }
+                    else
+                    {
+                        _dbContext.Entry(indicator).State = EntityState.Modified;
+                    }
                 }
             }
 
-            Console.WriteLine("Saving changes to database...");
-            await _dbContext.SaveChangesAsync();
+            try
+            {
+                Console.WriteLine("Saving changes to database...");
+                await _dbContext.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                Console.WriteLine("Concurrency exception occurred while saving changes:");
+                Console.WriteLine(ex.Message);
 
-            // Log post-save data
+                foreach (var entry in ex.Entries)
+                {
+                    if (entry.Entity is Direction dir)
+                    {
+                        Console.WriteLine($"Concurrency conflict on Direction ID: {dir.Id}");
+                        entry.Reload();
+                    }
+                    else if (entry.Entity is Indicator ind)
+                    {
+                        Console.WriteLine($"Concurrency conflict on Indicator ID: {ind.Id}");
+                        entry.Reload();
+                    }
+                    else if (entry.Entity is DirectionStatusHistory dsh)
+                    {
+                        Console.WriteLine($"Concurrency conflict on DirectionStatusHistory ID: {dsh.Id}");
+                        entry.Reload();
+                    }
+                    else if (entry.Entity is Patient pat)
+                    {
+                        Console.WriteLine($"Concurrency conflict on Patient ID: {pat.Id}");
+                        entry.Reload();
+                    }
+                    else if (entry.Entity is LaboratoryData labData)
+                    {
+                        Console.WriteLine($"Concurrency conflict on LaboratoryData ID: {labData.Id}");
+                        entry.Reload();
+                    }
+                    else if (entry.Entity is AnalysType analysType)
+                    {
+                        Console.WriteLine($"Concurrency conflict on AnalysType ID: {analysType.Id}");
+                        entry.Reload();
+                    }
+                    else if (entry.Entity is Department dept)
+                    {
+                        Console.WriteLine($"Concurrency conflict on Department ID: {dept.Id}");
+                        entry.Reload();
+                    }
+                    else
+                    {
+                        Console.WriteLine("Concurrency conflict on unknown entity type");
+                        throw new NotSupportedException(
+                            "A concurrency conflict was detected for an unknown entity type.");
+                    }
+                }
+
+                // Now that the entities have been refreshed, try to save again
+                await _dbContext.SaveChangesAsync();
+            }
+
             var savedDirection = await _dbContext.Directions
                 .Include(d => d.DirectionStatusHistory)
                 .Include(d => d.Indicators)
@@ -347,9 +559,6 @@ namespace MyApi.Services
             }
             Console.WriteLine("Saved Indicators count: " + savedDirection.Indicators.Count);
         }
-
-
-
 
         private class ResponseWrapper
         {

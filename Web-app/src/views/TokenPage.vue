@@ -136,7 +136,6 @@ export default {
         return {
           ...direction,
           directionStatusHistory: direction.directionStatusHistory.$values.reverse(),
-          indicators: direction.indicators.$values,
         };
       });
     },

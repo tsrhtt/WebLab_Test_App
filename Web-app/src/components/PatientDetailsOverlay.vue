@@ -11,6 +11,7 @@
           <p><strong>Дата рождения:</strong> {{ formatDate(direction.patient.birthDate) || 'Нет данных' }}</p>
           <p><strong>Номер идентификации:</strong> {{ direction.patient.identificationNumber || 'Нет данных' }}</p>
         </div>
+        <button class="details-button" @click="fetchDetailedData">📐</button>
       </div>
       <div class="additional-info">
         <p><strong>ID:</strong> {{ direction.id || 'Нет данных' }}</p>
@@ -71,6 +72,16 @@ export default {
         7: 'Готово',
       };
       return statusDescriptions[statusId] || 'Неизвестный статус';
+    },
+    async fetchDetailedData() {
+      try {
+        const response = await this.$api.get(`direction/detailed/${this.direction.id}`);
+        const detailedData = response.data;
+        this.$router.push({ name: 'DetailedPage', params: { detailedData } });
+      } catch (error) {
+        console.error('Failed to fetch detailed data:', error);
+        alert('Не удалось получить подробные данные.');
+      }
     },
   },
 };
@@ -173,5 +184,18 @@ export default {
   padding: 10px;
   background-color: #fff;
   border-radius: 10px;
+}
+
+.details-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #ADD8E6;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  padding: 10px;
+  font-size: 20px;
+  cursor: pointer;
 }
 </style>

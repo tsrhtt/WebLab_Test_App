@@ -46,6 +46,20 @@ namespace MyApi.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
-    }
 
+        [HttpGet("direction/detailed/{id}")]
+        public async Task<IActionResult> GetDetailed(int id)
+        {
+            try
+            {
+                var direction = await _webLabService.GetDetailedDirection(id);
+                return Ok(direction);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting detailed direction");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+    }
 }

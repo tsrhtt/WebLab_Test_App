@@ -45,7 +45,7 @@ namespace MyApi.Data
                 .HasOne(s => s.Department)
                 .WithMany(g => g.Directions)
                 .HasForeignKey(s => s.DepartmentId)
-                .IsRequired(false)  // Indicates that DepartmentId can be null
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<DirectionStatusHistory>()
@@ -67,7 +67,7 @@ namespace MyApi.Data
             modelBuilder.Entity<Patient>().HasKey(x => x.Id);
             modelBuilder.Entity<Direction>().HasKey(x => x.Id);
             modelBuilder.Entity<DirectionStatusHistory>().HasKey(x => x.Id);
-            modelBuilder.Entity<Indicator>().HasKey(x => new { x.IndicatorId, x.DirectionId });
+            modelBuilder.Entity<Indicator>().HasKey(x => x.Id);
             modelBuilder.Entity<User>().HasKey(x => x.Username);
 
             // Adding indexes to improve querying performance
@@ -82,6 +82,13 @@ namespace MyApi.Data
             modelBuilder.Entity<Direction>()
                 .HasIndex(p => p.AnalysTypeId)
                 .HasDatabaseName("IX_Directions_AnalysTypeId");
+
+            // Configure IndicatorGroup as a keyless entity and ignore IndicatorGroups property in Direction
+            modelBuilder.Entity<IndicatorGroup>()
+                .HasNoKey();
+
+            modelBuilder.Entity<Direction>()
+                .Ignore(d => d.IndicatorGroups);
         }
     }
 }
