@@ -18,9 +18,9 @@ namespace MyApi.DTOs
         public double? MinStandardValue { get; set; }
         public double? MaxStandardValue { get; set; }
         public double? ResultVal { get; set; }
-        public string ResultStr { get; set; }
-        public List<string> TextStandards { get; set; }
-        public List<string> PossibleStringValues { get; set; }
-        public List<string> DynamicValues { get; set; }
+        public string? ResultStr { get; set; }
+        public List<string>? TextStandards { get; set; }
+        public List<string>? PossibleStringValues { get; set; }
+        public List<string>? DynamicValues { get; set; }
     }
 }

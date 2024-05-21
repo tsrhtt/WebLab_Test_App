@@ -56,12 +56,12 @@ namespace MyApi.Models
         public string? ResultStr { get; set; }
 
         [JsonPropertyName("textStandards")]
-        public List<string> TextStandards { get; set; }
+        public List<string>? TextStandards { get; set; }
 
         [JsonPropertyName("possibleStringValues")]
-        public List<string> PossibleStringValues { get; set; }
+        public List<string>? PossibleStringValues { get; set; }
 
         [JsonPropertyName("dynamicValues")]
-        public List<string> DynamicValues { get; set; }
+        public List<string>? DynamicValues { get; set; }
     }
 }

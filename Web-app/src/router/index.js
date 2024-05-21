@@ -4,7 +4,12 @@ import DetailedPage from '../views/DetailedPage.vue'
 
 const routes = [
   { path: '/', name: 'TokenPage', component: TokenPage },
-  { path: '/detailed', name: 'DetailedPage', component: DetailedPage, props: true }
+  {
+    path: '/detailed/:id',
+    name: 'DetailedPage',
+    component: DetailedPage,
+    props: route => ({ detailedData: JSON.parse(route.query.detailedData) })
+  }
 ]
 
 const router = createRouter({

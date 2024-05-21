@@ -90,13 +90,14 @@
         v-if="showOverlay"
         :direction="selectedDirection"
         @close="showOverlay = false"
+        @fetch-detailed-data="fetchDetailedData"
       />
     </main>
   </div>
 </template>
 
 <script>
-import PatientDetailsOverlay from 'D:/project-practice/Web-app/src/components/PatientDetailsOverlay.vue';
+import PatientDetailsOverlay from '../components/PatientDetailsOverlay.vue';
 
 export default {
   components: {
@@ -155,9 +156,24 @@ export default {
       this.selectedDirection = direction;
       this.showOverlay = true;
     },
+    async fetchDetailedData(directionId) {
+      try {
+        const response = await this.$api.get(`direction/detailed/${directionId}`);
+        const detailedData = response.data;
+        this.$router.push({
+          name: 'DetailedPage',
+          params: { id: directionId },
+          query: { detailedData: JSON.stringify(detailedData) }
+        });
+      } catch (error) {
+        console.error('Failed to fetch detailed data:', error);
+        alert('Не удалось получить подробные данные.');
+      }
+    },
   },
 };
 </script>
+
 
 <style scoped>
 .app-container {

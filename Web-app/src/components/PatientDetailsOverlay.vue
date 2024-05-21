@@ -74,14 +74,7 @@ export default {
       return statusDescriptions[statusId] || 'Неизвестный статус';
     },
     async fetchDetailedData() {
-      try {
-        const response = await this.$api.get(`direction/detailed/${this.direction.id}`);
-        const detailedData = response.data;
-        this.$router.push({ name: 'DetailedPage', params: { detailedData } });
-      } catch (error) {
-        console.error('Failed to fetch detailed data:', error);
-        alert('Не удалось получить подробные данные.');
-      }
+      this.$emit('fetch-detailed-data', this.direction.id);
     },
   },
 };
@@ -123,6 +116,7 @@ export default {
   border-radius: 20px;
   width: 100%;
   margin-bottom: 20px;
+  position: relative;
 }
 
 .patient-info img {
