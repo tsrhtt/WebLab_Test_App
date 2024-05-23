@@ -16,15 +16,26 @@
         <h1>ЛАБОРАТОРИЯ.WEB</h1>
       </header>
 
+      <div class="validate-container">
+        <button @click="validateData">Validate</button>
+        <div v-if="validationMessage" :class="validationMessageClass" @click="showErrorsPopup">
+          {{ validationMessage }}
+        </div>
+      </div>
+
       <div class="details-container">
         <div class="left-panel">
           <div class="patient-info">
             <h2>Пациент</h2>
             <p><strong>Полное имя:</strong> {{ detailedData.patient.fullName || 'Нет данных' }}</p>
+            <p :class="{ 'highlight': validationErrors.includes('identificationNumber') }">
+              <strong>Номер идентификации:</strong> {{ detailedData.patient.identificationNumber || 'Нет данных' }}
+            </p>
             <p><strong>Пол:</strong> {{ detailedData.patient.sexDescription || 'Нет данных' }}</p>
-            <p><strong>Возраст:</strong> {{ detailedData.patient.age || 'Нет данных' }}</p>
-            <p><strong>Дата рождения:</strong> {{ formatDate(detailedData.patient.birthDate) || 'Нет данных' }}</p>
-            <p><strong>Номер идентификации:</strong> {{ detailedData.patient.identificationNumber || 'Нет данных' }}</p>
+            <p :class="{ 'highlight': validationErrors.includes('birthDate') || validationErrors.includes('age') }">
+              <strong>Дата рождения:</strong> {{ formatDate(detailedData.patient.birthDate) || 'Нет данных' }}
+            </p>
+            <p :class="{ 'highlight': validationErrors.includes('age') }"><strong>Возраст:</strong> {{ detailedData.patient.age }}</p>
           </div>
 
           <div class="direction-info">
@@ -73,18 +84,28 @@
                 <span v-else-if="indicator.resultVal === null && indicator.resultStr === null" class="status-icon orange"></span>
                 {{ indicator.name }}
               </div>
-              <p v-if="indicator.units"><strong>Единицы:</strong> {{ indicator.units }}</p>
-              <p v-if="indicator.type"><strong>Тип:</strong> {{ indicator.type }}</p>
-              <p v-if="indicator.comment"><strong>Комментарий:</strong> {{ indicator.comment }}</p>
-              <p v-if="indicator.isAdditional !== null"><strong>Дополнительный:</strong> {{ indicator.isAdditional ? 'Да' : 'Нет' }}</p>
-              <p v-if="indicator.isNormExist !== null"><strong>Норма существует:</strong> {{ indicator.isNormExist ? 'Да' : 'Нет' }}</p>
+              <p><strong>Единицы:</strong> {{ indicator.units }}</p>
+              <p><strong>Тип:</strong> {{ indicator.type }}</p>
+              <p><strong>Комментарий:</strong> {{ indicator.comment }}</p>
+              <p><strong>Дополнительный:</strong> {{ indicator.isAdditional ? 'Да' : 'Нет' }}</p>
+              <p><strong>Норма существует:</strong> {{ indicator.isNormExist ? 'Да' : 'Нет' }}</p>
               <p v-if="indicator.minStandardValue !== null"><strong>Минимальное значение нормы:</strong> {{ indicator.minStandardValue }}</p>
               <p v-if="indicator.maxStandardValue !== null"><strong>Максимальное значение нормы:</strong> {{ indicator.maxStandardValue }}</p>
-              <p v-if="indicator.resultVal !== null"><strong>Результат:</strong> {{ indicator.resultVal }}</p>
-              <p v-if="indicator.resultStr !== null"><strong>Результат (строка):</strong> {{ indicator.resultStr }}</p>
+              <p :class="{ 'highlight': validationErrors.includes(indicator.id + '_range') }" v-if="indicator.resultVal !== null"><strong>Результат:</strong> {{ indicator.resultVal }}</p>
+              <p :class="{ 'highlight': validationErrors.includes(indicator.id + '_stringValue') }" v-if="indicator.resultStr !== null"><strong>Результат (строка):</strong> {{ indicator.resultStr }}</p>
               <p v-if="indicator.textStandards && indicator.textStandards.length"><strong>Текстовые стандарты:</strong> {{ indicator.textStandards.join(', ') }}</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div v-if="showErrors" class="error-popup">
+        <div class="popup-content">
+          <span class="close-button" @click="showErrors = false">&times;</span>
+          <h3>Ошибки валидации:</h3>
+          <ul>
+            <li v-for="(error, index) in validationErrorDetails" :key="index">{{ error }}</li>
+          </ul>
         </div>
       </div>
     </main>
@@ -98,6 +119,15 @@ export default {
       type: Object,
       required: true,
     },
+  },
+  data() {
+    return {
+      validationErrors: [],
+      validationErrorDetails: [],
+      validationMessage: '',
+      validationMessageClass: '',
+      showErrors: false,
+    };
   },
   computed: {
     indicatorGroups() {
@@ -137,7 +167,80 @@ export default {
       };
       return statusDescriptions[statusId] || 'Неизвестный статус';
     },
-  },
+    validateData() {
+      this.validationErrors = [];
+      this.validationErrorDetails = [];
+
+      // Range Validation
+      this.detailedData.indicators.$values.forEach(indicator => {
+        if (indicator.resultVal !== null) {
+          if (indicator.resultVal < indicator.minStandardValue || indicator.resultVal > indicator.maxStandardValue) {
+            this.validationErrorDetails.push(`Indicator ${indicator.name} has a value out of range: ${indicator.resultVal}`);
+            this.validationErrors.push(indicator.id + '_range');
+          }
+        }
+      });
+
+      // String Value Validation
+      this.detailedData.indicators.$values.forEach(indicator => {
+        if (indicator.resultStr !== null) {
+          if (indicator.possibleStringValues.$values && !indicator.possibleStringValues.$values.includes(indicator.resultStr)) {
+            this.validationErrorDetails.push(`Indicator ${indicator.name} has an invalid string result: ${indicator.resultStr}`);
+            this.validationErrors.push(indicator.id + '_stringValue');
+          }
+        }
+      });
+
+      // Consistency Checks
+      if (new Date(this.detailedData.acceptedDate) < new Date(this.detailedData.requestDate)) {
+        this.validationErrorDetails.push('Accepted date is earlier than the request date.');
+      }
+
+      // Presence Checks
+      const requiredFields = ['patient.fullName', 'laboratory', 'analysTypeName', 'directionStatus', 'requestDate', 'bioMaterialType'];
+      requiredFields.forEach(field => {
+        const fieldValue = this.getFieldValue(this.detailedData, field);
+        if (!fieldValue) {
+          this.validationErrorDetails.push(`Required field ${field.replace(/\./g, ' ')} is missing.`);
+        }
+      });
+
+      // Additional Checks
+      if (!this.detailedData.patient.identificationNumber) {
+        this.validationErrorDetails.push('Patient identification number is missing.');
+        this.validationErrors.push('identificationNumber');
+      }
+
+      const birthDate = new Date(this.detailedData.patient.birthDate);
+      const currentDate = new Date();
+      let age = currentDate.getFullYear() - birthDate.getFullYear();
+      const monthDiff = currentDate.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && currentDate.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      if (age !== this.detailedData.patient.age) {
+        this.validationErrorDetails.push('Patient age does not match birth date.');
+        this.validationErrors.push('birthDate');
+        this.validationErrors.push('age');
+      }
+
+      if (this.validationErrors.length > 0) {
+        this.validationMessage = 'Errors Found';
+        this.validationMessageClass = 'error-message';
+      } else {
+        this.validationMessage = 'No errors found';
+        this.validationMessageClass = 'success-message';
+      }
+    },
+    getFieldValue(obj, path) {
+      return path.split('.').reduce((value, key) => (value && value[key] !== 'undefined') ? value[key] : null, obj);
+    },
+    showErrorsPopup() {
+      if (this.validationMessageClass === 'error-message') {
+        this.showErrors = true;
+      }
+    }
+  }
 };
 </script>
 
@@ -198,6 +301,43 @@ export default {
   color: #ADD8E6;
   font-size: 24px;
   font-weight: bold;
+}
+
+.validate-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.validate-container button {
+  background-color: #ADD8E6;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.validate-container button:hover {
+  background-color: #8dbcd4;
+}
+
+.success-message {
+  background-color: #98FB9866;
+  color: green;
+  padding: 10px;
+  border-radius: 10px;
+  margin-left: 10px;
+}
+
+.error-message {
+  background-color: #CD4A4C66;
+  color: red;
+  padding: 10px;
+  border-radius: 10px;
+  margin-left: 10px;
+  cursor: pointer;
 }
 
 .details-container {
@@ -291,5 +431,54 @@ export default {
   padding: 10px;
   margin: 5px;
   flex: 1;
+}
+
+.validation-errors {
+  background-color: #ffe6e6;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.validation-errors h3 {
+  color: red;
+}
+
+.validation-errors ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.validation-errors li {
+  color: red;
+}
+
+.highlight {
+  background-color: #CD4A4C66;
+}
+
+.error-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  border: 1px solid red;
+  border-radius: 10px;
+  padding: 20px;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.popup-content {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 20px;
+  cursor: pointer;
 }
 </style>
