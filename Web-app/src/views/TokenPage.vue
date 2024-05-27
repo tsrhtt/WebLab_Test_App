@@ -14,7 +14,9 @@
 
       <section class="tables">
         <div class="button-container">
-          <button @click="getDirections">Получить направления</button>
+          <button @click="getDirectionsFromDb">Получить направления</button>
+          <button @click="confirmSync" class="sync-button">Синхронизироваться с ЛИС</button>
+          <button v-if="directions.length > 0" @click="goToAnalyzersPage" class="analyzers-button">Анализаторы</button>
         </div>
 
         <h2>Запросы</h2>
@@ -86,11 +88,26 @@
         </div>
       </div>
 
+      <div v-if="showConfirmationOverlay" class="confirmation-overlay">
+        <div class="confirmation-message">
+          <h3>Подтверждение</h3>
+          <p>Все данные будут перезагружены. Вы уверены?</p>
+          <div class="confirmation-buttons">
+            <button @click="confirmGetDirections" class="confirm-button">Да</button>
+            <button @click="cancelConfirmation" class="cancel-button">Отмена</button>
+          </div>
+        </div>
+      </div>
+
       <PatientDetailsOverlay
         v-if="showOverlay"
         :direction="selectedDirection"
+        :isEditing="isEditing"
         @close="showOverlay = false"
         @fetch-detailed-data="fetchDetailedData"
+        @edit-direction="editDirection"
+        @save-changes="saveChanges"
+        @delete-direction="deleteDirection"
       />
     </main>
   </div>
@@ -108,7 +125,9 @@ export default {
       directions: [],
       loading: false,
       showOverlay: false,
+      showConfirmationOverlay: false,
       selectedDirection: null,
+      isEditing: false
     };
   },
   computed: {
@@ -132,6 +151,28 @@ export default {
         this.loading = false;
       }
     },
+    async getDirectionsFromDb() {
+      this.loading = true;
+      try {
+        const response = await this.$api.get('direction/fromdb');
+        this.directions = this.processApiResponse(response.data); // Assuming response data is in the correct format
+      } catch (error) {
+        console.error('Не удалось получить направления из БД:', error);
+        alert('Не удалось получить направления из БД. Пожалуйста, проверьте консоль для получения подробной информации.');
+      } finally {
+        this.loading = false;
+      }
+    },
+    confirmSync() {
+      this.showConfirmationOverlay = true;
+    },
+    confirmGetDirections() {
+      this.showConfirmationOverlay = false;
+      this.getDirections();
+    },
+    cancelConfirmation() {
+      this.showConfirmationOverlay = false;
+    },
     processApiResponse(data) {
       return data.$values.map(direction => {
         return {
@@ -154,6 +195,7 @@ export default {
     },
     showDetails(direction) {
       this.selectedDirection = direction;
+      this.isEditing = false; // Ensure editing mode is off when details are shown
       this.showOverlay = true;
     },
     async fetchDetailedData(directionId) {
@@ -170,10 +212,52 @@ export default {
         alert('Не удалось получить подробные данные.');
       }
     },
+    editDirection() {
+      this.isEditing = true;
+    },
+    async saveChanges(updatedDirection) {
+      try {
+        const response = await this.$api.put(`direction/${updatedDirection.id}`, updatedDirection);
+        this.selectedDirection = response.data;
+        this.isEditing = false;
+        this.showOverlay = false;
+        await this.getDirectionsFromDb(); // Refresh the directions after saving
+      } catch (error) {
+        console.error('Failed to save changes:', error);
+        alert('Не удалось сохранить изменения.');
+      }
+    },
+    async deleteDirection(directionId) {
+      try {
+        await this.$api.delete(`direction/${directionId}`);
+        this.isEditing = false;
+        this.showOverlay = false;
+        await this.getDirectionsFromDb(); // Refresh the directions after deletion
+      } catch (error) {
+        console.error('Failed to delete direction:', error);
+        alert('Не удалось удалить направление.');
+      }
+    },
+    async acceptDirection(updatedDirection) {
+      try {
+        const request = {
+          acceptedBy: updatedDirection.acceptedBy,
+          comment: updatedDirection.laborantComment
+        };
+        await this.$api.post(`direction/accept/${updatedDirection.id}`, request);
+        this.showOverlay = false;
+        await this.getDirectionsFromDb(); // Refresh the directions after accepting
+      } catch (error) {
+        console.error('Failed to accept direction:', error);
+        alert('Не удалось принять направление.');
+      }
+    },
+    goToAnalyzersPage() {
+      this.$router.push({ name: 'AnalyzersPage' });
+    }
   },
 };
 </script>
-
 
 <style scoped>
 .app-container {
@@ -246,10 +330,19 @@ export default {
   border-radius: 20px;
   cursor: pointer;
   font-size: 16px;
+  margin-right: 20px;
+}
+
+.button-container .sync-button {
+  background-color: #CD4A4C66;
 }
 
 .button-container button:hover {
   background-color: #8dbcd4;
+}
+
+.button-container .sync-button:hover {
+  background-color: #b33a3a;
 }
 
 .tables h2 {
@@ -298,7 +391,8 @@ export default {
   border-bottom: 2px solid #ADD8E6;
 }
 
-.loading-overlay {
+.loading-overlay,
+.confirmation-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -311,16 +405,17 @@ export default {
   z-index: 1000;
 }
 
-.loading-message {
+.loading-message,
+.confirmation-message {
   background: white;
-  width: 150px;
-  height: 150px;
+  width: 300px;
   padding: 20px;
   border-radius: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  text-align: center;
 }
 
 .spinner {
@@ -340,5 +435,64 @@ export default {
   100% {
     transform: rotate(360deg);
   }
+}
+
+.confirmation-message h3 {
+  margin-bottom: 10px;
+  font-size: 22px;
+  font-weight: bold;
+  color: #333;
+}
+
+.confirmation-message p {
+  margin-bottom: 20px;
+  font-size: 16px;
+  color: #666;
+}
+
+.confirmation-buttons {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.confirmation-buttons button {
+  width: 45%;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.confirmation-buttons .confirm-button {
+  background-color: #ADD8E6;
+}
+
+.confirmation-buttons .cancel-button {
+  background-color: #ffcccc;
+}
+
+.confirmation-buttons .confirm-button:hover {
+  background-color: #8dbcd4;
+}
+
+.confirmation-buttons .cancel-button:hover {
+  background-color: #ff9999;
+}
+
+.analyzers-button {
+  background-color: #ADD8E6;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-right: 20px;
+}
+
+.analyzers-button:hover {
+  background-color: #8dbcd4;
 }
 </style>

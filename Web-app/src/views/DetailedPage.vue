@@ -17,7 +17,7 @@
       </header>
 
       <div class="validate-container">
-        <button @click="validateData">Validate</button>
+        <button @click="validateData">Проверить</button>
         <div v-if="validationMessage" :class="validationMessageClass" @click="showErrorsPopup">
           {{ validationMessage }}
         </div>
@@ -46,12 +46,20 @@
             <p><strong>Тип анализа:</strong> {{ detailedData.analysTypeName || 'Нет данных' }}</p>
             <p><strong>Статус:</strong> {{ detailedData.directionStatus || 'Нет данных' }}</p>
             <p><strong>Дата запроса:</strong> {{ formatDate(detailedData.requestDate) || 'Нет данных' }}</p>
-            <p><strong>Запрошено:</strong> {{ detailedData.requestedBy || 'Нет данных' }}</p>
-            <p><strong>Дата принятия:</strong> {{ detailedData.acceptedDate ? formatDate(detailedData.acceptedDate) : 'Нет данных' }}</p>
-            <p><strong>Принято:</strong> {{ detailedData.acceptedBy || 'Нет данных' }}</p>
+            <p :class="{ 'highlight': validationErrors.includes('requestedBy') }"><strong>Запрошено:</strong> {{ detailedData.requestedBy || 'Нет данных' }}</p>
+            <p :class="{ 'highlight': validationErrors.includes('acceptedDate') }"><strong>Дата принятия:</strong> {{ detailedData.acceptedDate ? formatDate(detailedData.acceptedDate) : 'Нет данных' }}</p>
+            <p :class="{ 'highlight': validationErrors.includes('acceptedBy') }"><strong>Принято:</strong> {{ detailedData.acceptedBy || 'Нет данных' }}</p>
             <p><strong>Дата выполнения:</strong> {{ detailedData.readyDate ? formatDate(detailedData.readyDate) : 'Нет данных' }}</p>
             <p><strong>Комментарии:</strong> {{ detailedData.laborantComment || 'Нет данных' }}</p>
-            <p><strong>Тип биоматериала:</strong> {{ detailedData.bioMaterialType || 'Нет данных' }}</p>
+            <p :class="{ 'highlight': validationErrors.includes('bioMaterialType') }"><strong>Тип биоматериала:</strong> {{ detailedData.bioMaterialType || 'Нет данных' }}</p>
+            <p><strong>Количество биоматериала:</strong> {{ detailedData.bioMaterialCount || 'Нет данных' }}</p>
+            <p :class="{ 'highlight': validationErrors.includes('sampleNumber') }"><strong>Номер образца:</strong> {{ detailedData.sampleNumber || 'Нет данных' }}</p>
+            <p><strong>Дата взятия образца:</strong> {{ detailedData.samplingDate ? formatDate(detailedData.samplingDate) : 'Нет данных' }}</p>
+            <p><strong>Дата взятия образца (строка):</strong> {{ detailedData.samplingDateStr || 'Нет данных' }}</p>
+            <p :class="{ 'highlight': validationErrors.includes('samplingDoctorFio') }"><strong>Врач взявший образец:</strong> {{ detailedData.samplingDoctorFio || 'Нет данных' }}</p>
+            <p :class="{ 'highlight': validationErrors.includes('doctorLabDiagnosticFio') }"><strong>ФИО врача лабораторной диагностики:</strong> {{ detailedData.doctorLabDiagnosticFio || 'Нет данных' }}</p>
+            <p :class="{ 'highlight': validationErrors.includes('doctorFeldsherLaborantFio') }"><strong>ФИО врача-фельдшера лаборанта:</strong> {{ detailedData.doctorFeldsherLaborantFio || 'Нет данных' }}</p>
+            <p><strong>ФИО врача-биолога:</strong> {{ detailedData.doctorBiologFio || 'Нет данных' }}</p>
           </div>
 
           <div class="direction-history">
@@ -75,14 +83,17 @@
             Внимание: биоматериал отсутствует
           </div>
 
-          <div v-for="group in indicatorGroups" :key="group.groupOrderNumber" class="indicator-group" :class="{'border-red': detailedData.directionStatusId === 3}">
+          <div v-for="group in indicatorGroups" :key="group.groupOrderNumber" class="indicator-group">
             <h2>{{ group.group }}</h2>
-            <div v-for="indicator in group.indicators" :key="indicator.id" class="indicator-item">
+            <div v-for="indicator in group.indicators" :key="indicator.id" class="indicator-item" :class="{ 'border-red': isOutOfRange(indicator) }">
               <div class="indicator-title">
                 <span v-if="indicator.resultVal !== null || indicator.resultStr !== null" class="status-icon green"></span>
                 <span v-else-if="detailedData.directionStatusId === 7 && indicator.resultVal === null && indicator.resultStr === null" class="status-icon red"></span>
                 <span v-else-if="indicator.resultVal === null && indicator.resultStr === null" class="status-icon orange"></span>
                 {{ indicator.name }}
+                <svg v-if="isOutOfRange(indicator)" class="warning-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4m0 4h.01"/>
+                </svg>
               </div>
               <p><strong>Единицы:</strong> {{ indicator.units }}</p>
               <p><strong>Тип:</strong> {{ indicator.type }}</p>
@@ -91,8 +102,8 @@
               <p><strong>Норма существует:</strong> {{ indicator.isNormExist ? 'Да' : 'Нет' }}</p>
               <p v-if="indicator.minStandardValue !== null"><strong>Минимальное значение нормы:</strong> {{ indicator.minStandardValue }}</p>
               <p v-if="indicator.maxStandardValue !== null"><strong>Максимальное значение нормы:</strong> {{ indicator.maxStandardValue }}</p>
-              <p :class="{ 'highlight': validationErrors.includes(indicator.id + '_range') }" v-if="indicator.resultVal !== null"><strong>Результат:</strong> {{ indicator.resultVal }}</p>
-              <p :class="{ 'highlight': validationErrors.includes(indicator.id + '_stringValue') }" v-if="indicator.resultStr !== null"><strong>Результат (строка):</strong> {{ indicator.resultStr }}</p>
+              <p v-if="indicator.resultVal !== null"><strong>Результат:</strong> {{ indicator.resultVal }}</p>
+              <p v-if="indicator.resultStr !== null"><strong>Результат (строка):</strong> {{ indicator.resultStr }}</p>
               <p v-if="indicator.textStandards && indicator.textStandards.length"><strong>Текстовые стандарты:</strong> {{ indicator.textStandards.join(', ') }}</p>
             </div>
           </div>
@@ -147,6 +158,9 @@ export default {
       return Object.values(groups).sort((a, b) => a.groupOrderNumber - b.groupOrderNumber);
     }
   },
+  mounted() {
+    this.checkIndicatorRanges();
+  },
   methods: {
     goToMainPage() {
       this.$router.push({ name: 'TokenPage' });
@@ -167,47 +181,46 @@ export default {
       };
       return statusDescriptions[statusId] || 'Неизвестный статус';
     },
+    isOutOfRange(indicator) {
+      if (!indicator.isNormExist) return false;
+      if (indicator.resultVal !== null) {
+        return indicator.resultVal < indicator.minStandardValue || indicator.resultVal > indicator.maxStandardValue;
+      }
+      if (indicator.resultStr !== null) {
+        return indicator.textStandards.$values && !indicator.textStandards.$values.includes(indicator.resultStr);
+      }
+      return false;
+    },
+    checkIndicatorRanges() {
+      this.detailedData.indicators.$values.forEach(indicator => {
+        if (this.isOutOfRange(indicator)) {
+          this.validationErrors.push(indicator.id + '_range');
+        }
+      });
+    },
     validateData() {
       this.validationErrors = [];
       this.validationErrorDetails = [];
 
-      // Range Validation
-      this.detailedData.indicators.$values.forEach(indicator => {
-        if (indicator.resultVal !== null) {
-          if (indicator.resultVal < indicator.minStandardValue || indicator.resultVal > indicator.maxStandardValue) {
-            this.validationErrorDetails.push(`Indicator ${indicator.name} has a value out of range: ${indicator.resultVal}`);
-            this.validationErrors.push(indicator.id + '_range');
-          }
-        }
-      });
-
-      // String Value Validation
-      this.detailedData.indicators.$values.forEach(indicator => {
-        if (indicator.resultStr !== null) {
-          if (indicator.possibleStringValues.$values && !indicator.possibleStringValues.$values.includes(indicator.resultStr)) {
-            this.validationErrorDetails.push(`Indicator ${indicator.name} has an invalid string result: ${indicator.resultStr}`);
-            this.validationErrors.push(indicator.id + '_stringValue');
-          }
-        }
-      });
-
-      // Consistency Checks
-      if (new Date(this.detailedData.acceptedDate) < new Date(this.detailedData.requestDate)) {
-        this.validationErrorDetails.push('Accepted date is earlier than the request date.');
+      // Consistency Checks (exclude statuses 1 and 3)
+      if (![1, 3].includes(this.detailedData.directionStatusId) && new Date(this.detailedData.acceptedDate) < new Date(this.detailedData.requestDate)) {
+        this.validationErrorDetails.push('Дата принятия ранее даты запроса.');
+        this.validationErrors.push('acceptedDate');
       }
 
       // Presence Checks
-      const requiredFields = ['patient.fullName', 'laboratory', 'analysTypeName', 'directionStatus', 'requestDate', 'bioMaterialType'];
+      const requiredFields = ['patient.fullName', 'laboratory', 'analysTypeName', 'directionStatus', 'requestDate', 'bioMaterialType', 'sampleNumber'];
       requiredFields.forEach(field => {
         const fieldValue = this.getFieldValue(this.detailedData, field);
         if (!fieldValue) {
-          this.validationErrorDetails.push(`Required field ${field.replace(/\./g, ' ')} is missing.`);
+          this.validationErrorDetails.push(`Обязательное поле ${field.replace(/\./g, ' ')} отсутствует.`);
+          this.validationErrors.push(field);
         }
       });
 
       // Additional Checks
       if (!this.detailedData.patient.identificationNumber) {
-        this.validationErrorDetails.push('Patient identification number is missing.');
+        this.validationErrorDetails.push('Отсутствует номер идентификации пациента.');
         this.validationErrors.push('identificationNumber');
       }
 
@@ -219,16 +232,53 @@ export default {
         age--;
       }
       if (age !== this.detailedData.patient.age) {
-        this.validationErrorDetails.push('Patient age does not match birth date.');
+        this.validationErrorDetails.push('Возраст пациента не соответствует дате рождения.');
         this.validationErrors.push('birthDate');
         this.validationErrors.push('age');
       }
 
+      // Direction status specific checks
+      if (this.detailedData.directionStatusId === 7) {
+        if (!this.detailedData.hasAnyResults || !this.detailedData.readyDate || !this.detailedData.doctorLabDiagnosticFio || !this.detailedData.doctorFeldsherLaborantFio) {
+          this.validationErrorDetails.push('Для статуса "Готово" отсутствуют необходимые данные: результаты, дата готовности, ФИО врача лабораторной диагностики или ФИО врача-фельдшера лаборанта.');
+        }
+      }
+
+      if (this.detailedData.directionStatusId !== 3) {
+        const samplingDateFields = ['samplingDate', 'samplingDateStr', 'samplingDoctorFio', 'sampleNumber', 'bioMaterialCount'];
+        samplingDateFields.forEach(field => {
+          if (!this.detailedData[field]) {
+            this.validationErrorDetails.push(`Для текущего статуса направления отсутствует обязательное поле: ${field}.`);
+            this.validationErrors.push(field);
+          }
+        });
+        const fioPattern = /^[А-ЯЁ][а-яё]+ [А-ЯЁ]\.?[А-ЯЁ]\.?$/;
+        const fioFields = ['samplingDoctorFio', 'doctorLabDiagnosticFio', 'doctorFeldsherLaborantFio', 'requestedBy', 'acceptedBy'];
+        fioFields.forEach(field => {
+          if (this.detailedData[field] && !fioPattern.test(this.detailedData[field])) {
+            this.validationErrorDetails.push(`ФИО ${field.replace(/([A-Z])/g, ' $1').trim()} имеет неверный формат.`);
+            this.validationErrors.push(field);
+          }
+        });
+      }
+
+      if (!this.detailedData.bioMaterialType) {
+        this.validationErrorDetails.push('Тип биоматериала отсутствует.');
+        this.validationErrors.push('bioMaterialType');
+      }
+
+      // Indicator group checks
+      this.detailedData.indicators.$values.forEach(indicator => {
+        if (!indicator.group) {
+          this.validationErrorDetails.push(`Индикатор ${indicator.name} не имеет группы.`);
+        }
+      });
+
       if (this.validationErrors.length > 0) {
-        this.validationMessage = 'Errors Found';
+        this.validationMessage = 'Обнаружены ошибки';
         this.validationMessageClass = 'error-message';
       } else {
-        this.validationMessage = 'No errors found';
+        this.validationMessage = 'Ошибки не найдены';
         this.validationMessageClass = 'success-message';
       }
     },
@@ -386,6 +436,10 @@ export default {
   padding: 10px 0;
 }
 
+.indicator-item.border-red {
+  border: 2px solid red;
+}
+
 .indicator-item:first-of-type {
   border-top: none;
 }
@@ -416,8 +470,10 @@ export default {
   background-color: red;
 }
 
-.border-red {
-  border: 1px solid red;
+.warning-icon {
+  width: 16px;
+  height: 16px;
+  margin-left: 5px;
 }
 
 .history-items {

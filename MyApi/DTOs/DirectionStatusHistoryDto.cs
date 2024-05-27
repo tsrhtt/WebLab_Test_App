@@ -9,6 +9,6 @@ namespace MyApi.DTOs
         public DateTime DateTime { get; set; }
         public int DirectionStatusId { get; set; }
         public string UserFio { get; set; }
-        public string Comment { get; set; }
+        public string? Comment { get; set; }
     }
 }

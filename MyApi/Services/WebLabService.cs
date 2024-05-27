@@ -154,6 +154,7 @@ namespace MyApi.Services
                     Indicators = d.IndicatorGroups?.SelectMany(ig => ig.Value).Select(i => new IndicatorDto
                     {
                         Id = i.Id,
+                        DirectionId = d.Id, // Ensure the correct DirectionId is set
                         Name = i.Name,
                         Abbreviation = i.Abbreviation,
                         Units = i.Units,
@@ -214,6 +215,7 @@ namespace MyApi.Services
             if (_token == null) throw new InvalidOperationException("Service not initialized with token.");
             Console.WriteLine($"Using token: {_token} for detailed data fetch.");
 
+            // Fetch detailed data including indicators from the external source
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
             var response = await _client.GetAsync($"Direction/{directionId}");
             Console.WriteLine($"HTTP GET request sent to {_client.BaseAddress}Direction/{directionId}");
@@ -229,58 +231,166 @@ namespace MyApi.Services
             Console.WriteLine("JSON Response:");
             Console.WriteLine(content);
 
+            Direction externalDirection;
             try
             {
-                var direction = JsonSerializer.Deserialize<Direction>(content, new JsonSerializerOptions
+                externalDirection = JsonSerializer.Deserialize<Direction>(content, new JsonSerializerOptions
                 {
                     Converters = { new DateTimeConverterHandlingUTC() }
                 });
 
-                // Debugging output
-                Console.WriteLine($"Deserialized - ID: {direction.Id}, StatusHistories: {direction.DirectionStatusHistory?.Count}, IndicatorGroups: {direction.IndicatorGroups?.Count}");
-                if (direction.IndicatorGroups != null)
+                if (externalDirection == null)
                 {
-                    foreach (var indicatorGroup in direction.IndicatorGroups)
-                    {
-                        Console.WriteLine($"IndicatorGroup Key: {indicatorGroup.Key}, Indicators Count: {indicatorGroup.Value?.Count}");
-                        if (indicatorGroup.Value != null)
-                        {
-                            foreach (var indicator in indicatorGroup.Value)
-                            {
-                                Console.WriteLine($"Indicator ID: {indicator.Id}, Name: {indicator.Name}");
-                            }
-                        }
-                    }
+                    throw new InvalidOperationException("Failed to deserialize external direction data.");
                 }
+            }
+            catch (JsonException ex)
+            {
+                Console.WriteLine($"JsonException encountered: {ex.Message}");
+                throw;
+            }
 
-                await HandleDirection(direction);
+            // Fetch direction details from the database (excluding indicators)
+            var dbDirection = await _dbContext.Directions
+                .Include(d => d.Patient)
+                .Include(d => d.LaboratoryData)
+                .Include(d => d.AnalysType)
+                .Include(d => d.DirectionStatusHistory)
+                .FirstOrDefaultAsync(d => d.Id == directionId);
 
-                return new DirectionDto
+            if (dbDirection == null)
+            {
+                throw new InvalidOperationException("Direction not found.");
+            }
+
+            // Map database entity to DTO with null checks
+            var directionDto = new DirectionDto
+            {
+                Id = dbDirection.Id,
+                PatientId = dbDirection.PatientId,
+                Patient = dbDirection.Patient != null ? new PatientDto
                 {
-                    Id = direction.Id,
-                    PatientId = direction.PatientId,
+                    Id = dbDirection.Patient.Id,
+                    IdentificationNumber = dbDirection.Patient.IdentificationNumber,
+                    PatientId = dbDirection.Patient.PatientId,
+                    Name = dbDirection.Patient.Name,
+                    Surname = dbDirection.Patient.Surname,
+                    SecondName = dbDirection.Patient.SecondName,
+                    FullName = dbDirection.Patient.FullName,
+                    Sex = dbDirection.Patient.Sex,
+                    BirthDate = dbDirection.Patient.BirthDate,
+                    SexDescription = dbDirection.Patient.SexDescription,
+                    Age = dbDirection.Patient.Age
+                } : null,
+                LaboratoryId = dbDirection.LaboratoryId,
+                Laboratory = dbDirection.LaboratoryData?.Name,
+                AnalysTypeId = dbDirection.AnalysTypeId,
+                AnalysTypeName = dbDirection.AnalysType?.Name,
+                AnalysTypeFormat = dbDirection.AnalysType.Format,
+                DepartmentId = dbDirection.DepartmentId,
+                DepartmentName = dbDirection.Department?.Name,
+                DirectionStatusHistory = dbDirection.DirectionStatusHistory?.Select(sh => new DirectionStatusHistoryDto
+                {
+                    Id = sh.Id,
+                    DirectionId = sh.DirectionId,
+                    DateTime = sh.DateTime,
+                    DirectionStatusId = sh.DirectionStatusId,
+                    UserFio = sh.UserFio,
+                    Comment = sh.Comment
+                }).ToList(),
+                PatientFullName = dbDirection.PatientFullName,
+                Cito = dbDirection.Cito,
+                IsArchived = dbDirection.IsArchived,
+                DirectionStatus = dbDirection.DirectionStatus,
+                DirectionStatusId = dbDirection.DirectionStatusId,
+                Category = dbDirection.Category,
+                RequestDate = dbDirection.RequestDate,
+                RequestedBy = dbDirection.RequestedBy,
+                AcceptedDate = dbDirection.AcceptedDate,
+                AcceptedBy = dbDirection.AcceptedBy,
+                OnDate = dbDirection.OnDate,
+                ReadyDate = dbDirection.ReadyDate,
+                Sid = dbDirection.Sid,
+                HasAnyResults = dbDirection.HasAnyResults,
+                LaborantComment = dbDirection.LaborantComment,
+                SamplingDate = dbDirection.SamplingDate,
+                SamplingDateStr = dbDirection.SamplingDateStr,
+                SampleNumber = dbDirection.SampleNumber,
+                SamplingDoctorFio = dbDirection.SamplingDoctorFio,
+                DoctorLabDiagnosticFio = dbDirection.DoctorLabDiagnosticFio,
+                DoctorFeldsherLaborantFio = dbDirection.DoctorFeldsherLaborantFio,
+                DoctorBiologFio = dbDirection.DoctorBiologFio,
+                BioMaterialCount = dbDirection.BioMaterialCount,
+                BioMaterialType = dbDirection.BioMaterialType,
+                NumberByJournal = dbDirection.NumberByJournal
+            };
+
+            // Add indicators from the external source to the DTO
+            directionDto.Indicators = externalDirection.IndicatorGroups?.SelectMany(ig => ig.Value).Select(i => new IndicatorDto
+            {
+                Id = i.Id,
+                DirectionId = directionId,
+                Name = i.Name,
+                Abbreviation = i.Abbreviation,
+                Units = i.Units,
+                Type = i.Type,
+                Comment = i.Comment,
+                IsAdditional = i.IsAdditional,
+                IsNormExist = i.IsNormExist,
+                IsInReference = i.IsInReference,
+                Group = i.Group,
+                GroupOrderNumber = i.GroupOrderNumber,
+                SortNumber = i.SortNumber,
+                MinStandardValue = i.MinStandardValue,
+                MaxStandardValue = i.MaxStandardValue,
+                ResultVal = i.ResultVal,
+                ResultStr = i.ResultStr,
+                TextStandards = i.TextStandards,
+                PossibleStringValues = i.PossibleStringValues,
+                DynamicValues = i.DynamicValues
+            }).ToList();
+
+            return directionDto;
+        }
+
+
+
+        public async Task<IEnumerable<DirectionDto>> GetDirectionsFromDb()
+        {
+            // Clear the indicators table before fetching directions
+            await ClearIndicatorsTable();
+
+            var directions = await _dbContext.Directions
+                .Include(d => d.Patient)
+                .Include(d => d.LaboratoryData)
+                .Include(d => d.AnalysType)
+                .Include(d => d.DirectionStatusHistory)
+                .Select(d => new DirectionDto
+                {
+                    Id = d.Id,
+                    PatientId = d.PatientId,
                     Patient = new PatientDto
                     {
-                        Id = direction.Patient.Id,
-                        IdentificationNumber = direction.Patient.IdentificationNumber,
-                        PatientId = direction.Patient.PatientId,
-                        Name = direction.Patient.Name,
-                        Surname = direction.Patient.Surname,
-                        SecondName = direction.Patient.SecondName,
-                        FullName = direction.Patient.FullName,
-                        Sex = direction.Patient.Sex,
-                        BirthDate = direction.Patient.BirthDate,
-                        SexDescription = direction.Patient.SexDescription,
-                        Age = direction.Patient.Age
+                        Id = d.Patient.Id,
+                        IdentificationNumber = d.Patient.IdentificationNumber,
+                        PatientId = d.Patient.PatientId,
+                        Name = d.Patient.Name,
+                        Surname = d.Patient.Surname,
+                        SecondName = d.Patient.SecondName,
+                        FullName = d.Patient.FullName,
+                        Sex = d.Patient.Sex,
+                        BirthDate = d.Patient.BirthDate,
+                        SexDescription = d.Patient.SexDescription,
+                        Age = d.Patient.Age
                     },
-                    LaboratoryId = direction.LaboratoryId,
-                    Laboratory = direction.Laboratory,
-                    AnalysTypeId = direction.AnalysTypeId,
-                    AnalysTypeName = direction.AnalysTypeName,
-                    AnalysTypeFormat = direction.AnalysTypeFormat,
-                    DepartmentId = direction.DepartmentId,
-                    DepartmentName = direction.DepartmentName,
-                    DirectionStatusHistory = direction.DirectionStatusHistory?.Select(sh => new DirectionStatusHistoryDto
+                    LaboratoryId = d.LaboratoryId,
+                    Laboratory = d.LaboratoryData.Name,
+                    AnalysTypeId = d.AnalysTypeId,
+                    AnalysTypeName = d.AnalysType.Name,
+                    AnalysTypeFormat = d.AnalysType.Format,
+                    DepartmentId = d.DepartmentId,
+                    DepartmentName = d.Department.Name,
+                    DirectionStatusHistory = d.DirectionStatusHistory.Select(sh => new DirectionStatusHistoryDto
                     {
                         Id = sh.Id,
                         DirectionId = sh.DirectionId,
@@ -289,62 +399,167 @@ namespace MyApi.Services
                         UserFio = sh.UserFio,
                         Comment = sh.Comment
                     }).ToList(),
-                    Indicators = direction.IndicatorGroups?.SelectMany(ig => ig.Value).Select(i => new IndicatorDto
-                    {
-                        Id = i.Id,
-                        Name = i.Name,
-                        Abbreviation = i.Abbreviation,
-                        Units = i.Units,
-                        Type = i.Type,
-                        Comment = i.Comment,
-                        IsAdditional = i.IsAdditional,
-                        IsNormExist = i.IsNormExist,
-                        IsInReference = i.IsInReference,
-                        Group = i.Group,
-                        GroupOrderNumber = i.GroupOrderNumber,
-                        SortNumber = i.SortNumber,
-                        MinStandardValue = i.MinStandardValue,
-                        MaxStandardValue = i.MaxStandardValue,
-                        ResultVal = i.ResultVal,
-                        ResultStr = i.ResultStr,
-                        TextStandards = i.TextStandards,
-                        PossibleStringValues = i.PossibleStringValues,
-                        DynamicValues = i.DynamicValues
-                    }).ToList(),
-                    PatientFullName = direction.PatientFullName,
-                    Cito = direction.Cito,
-                    IsArchived = direction.IsArchived,
-                    DirectionStatus = direction.DirectionStatus,
-                    DirectionStatusId = direction.DirectionStatusId,
-                    Category = direction.Category,
-                    RequestDate = direction.RequestDate,
-                    RequestedBy = direction.RequestedBy,
-                    AcceptedDate = direction.AcceptedDate,
-                    AcceptedBy = direction.AcceptedBy,
-                    OnDate = direction.OnDate,
-                    ReadyDate = direction.ReadyDate,
-                    Sid = direction.Sid,
-                    HasAnyResults = direction.HasAnyResults,
-                    LaborantComment = direction.LaborantComment,
-                    SamplingDate = direction.SamplingDate,
-                    SamplingDateStr = direction.SamplingDateStr,
-                    SampleNumber = direction.SampleNumber,
-                    SamplingDoctorFio = direction.SamplingDoctorFio,
-                    DoctorLabDiagnosticFio = direction.DoctorLabDiagnosticFio,
-                    DoctorFeldsherLaborantFio = direction.DoctorFeldsherLaborantFio,
-                    DoctorBiologFio = direction.DoctorBiologFio,
-                    BioMaterialCount = direction.BioMaterialCount,
-                    BioMaterialType = direction.BioMaterialType,
-                    NumberByJournal = direction.NumberByJournal
-                };
-            }
-            catch (JsonException ex)
-            {
-                Console.WriteLine($"JsonException encountered: {ex.Message}");
-                throw;
-            }
+                    PatientFullName = d.PatientFullName,
+                    Cito = d.Cito,
+                    IsArchived = d.IsArchived,
+                    DirectionStatus = d.DirectionStatus,
+                    DirectionStatusId = d.DirectionStatusId,
+                    Category = d.Category,
+                    RequestDate = d.RequestDate,
+                    RequestedBy = d.RequestedBy,
+                    AcceptedDate = d.AcceptedDate,
+                    AcceptedBy = d.AcceptedBy,
+                    OnDate = d.OnDate,
+                    ReadyDate = d.ReadyDate,
+                    Sid = d.Sid,
+                    HasAnyResults = d.HasAnyResults,
+                    LaborantComment = d.LaborantComment,
+                    SamplingDate = d.SamplingDate,
+                    SamplingDateStr = d.SamplingDateStr,
+                    SampleNumber = d.SampleNumber,
+                    SamplingDoctorFio = d.SamplingDoctorFio,
+                    DoctorLabDiagnosticFio = d.DoctorLabDiagnosticFio,
+                    DoctorFeldsherLaborantFio = d.DoctorFeldsherLaborantFio,
+                    DoctorBiologFio = d.DoctorBiologFio,
+                    BioMaterialCount = d.BioMaterialCount,
+                    BioMaterialType = d.BioMaterialType,
+                    NumberByJournal = d.NumberByJournal
+                }).ToListAsync();
+
+            return directions;
         }
 
+        private async Task ClearIndicatorsTable()
+        {
+            _dbContext.Indicators.RemoveRange(_dbContext.Indicators);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task AcceptDirection(int directionId, string acceptedBy, string comment)
+        {
+            var existingDirection = await _dbContext.Directions
+                .Include(d => d.DirectionStatusHistory)
+                .FirstOrDefaultAsync(d => d.Id == directionId);
+
+            if (existingDirection == null)
+            {
+                throw new InvalidOperationException("Direction not found.");
+            }
+
+            var currentDate = DateTime.UtcNow;
+
+            if (!existingDirection.BioMaterialCount.HasValue)
+            {
+                existingDirection.DirectionStatusId = 3; // Нет биоматериала
+                existingDirection.DirectionStatus = "Нет биоматериала";
+                existingDirection.AcceptedDate = null;
+                existingDirection.AcceptedBy = null;
+            }
+            else
+            {
+                existingDirection.DirectionStatusId = 6; // В работе
+                existingDirection.DirectionStatus = "В работе";
+                existingDirection.AcceptedDate = currentDate;
+                existingDirection.AcceptedBy = acceptedBy;
+            }
+
+            var newHistory = new DirectionStatusHistory
+            {
+                Id = await _dbContext.DirectionStatusHistories.MaxAsync(h => (int?)h.Id) + 1 ?? 1,
+                DirectionId = existingDirection.Id,
+                DateTime = currentDate,
+                DirectionStatusId = existingDirection.DirectionStatusId,
+                UserFio = existingDirection.DirectionStatusId == 3 ? null : acceptedBy, // Set to null if status is 3
+                Comment = comment
+            };
+
+            _dbContext.DirectionStatusHistories.Add(newHistory);
+
+            await _dbContext.SaveChangesAsync();
+        }
+
+
+        public async Task UpdateDirection(DirectionDto updatedDirectionDto)
+        {
+            var existingDirection = await _dbContext.Directions
+                .Include(d => d.Patient)
+                .Include(d => d.LaboratoryData)
+                .Include(d => d.AnalysType)
+                .Include(d => d.DirectionStatusHistory)
+                .Include(d => d.Indicators)
+                .FirstOrDefaultAsync(d => d.Id == updatedDirectionDto.Id);
+
+            if (existingDirection == null)
+            {
+                throw new InvalidOperationException("Direction not found.");
+            }
+
+            // Update patient information
+            existingDirection.Patient.FullName = updatedDirectionDto.Patient.FullName;
+            existingDirection.Patient.SexDescription = updatedDirectionDto.Patient.SexDescription;
+            existingDirection.Patient.Sex = updatedDirectionDto.Patient.SexDescription == "Мужской" ? 1 : 2;
+            existingDirection.Patient.BirthDate = updatedDirectionDto.Patient.BirthDate.ToUniversalTime();
+            existingDirection.Patient.IdentificationNumber = updatedDirectionDto.Patient.IdentificationNumber;
+
+            // Update other fields
+            existingDirection.Laboratory = updatedDirectionDto.Laboratory;
+            existingDirection.DepartmentName = updatedDirectionDto.DepartmentName;
+            existingDirection.PatientFullName = updatedDirectionDto.PatientFullName;
+            existingDirection.RequestedBy = updatedDirectionDto.RequestedBy;
+            existingDirection.LaborantComment = updatedDirectionDto.LaborantComment;
+            existingDirection.OnDate = updatedDirectionDto.OnDate?.ToUniversalTime();
+            existingDirection.Cito = updatedDirectionDto.Cito;
+            existingDirection.SamplingDate = updatedDirectionDto.SamplingDate?.ToUniversalTime();
+            existingDirection.SampleNumber = updatedDirectionDto.SampleNumber;
+            existingDirection.SamplingDoctorFio = updatedDirectionDto.SamplingDoctorFio;
+            existingDirection.BioMaterialCount = updatedDirectionDto.BioMaterialCount;
+            existingDirection.BioMaterialType = updatedDirectionDto.BioMaterialType;
+
+            // Update related IDs if necessary
+            var labData = await _dbContext.LaboratoryDatas.FirstOrDefaultAsync(l => l.Name == updatedDirectionDto.Laboratory);
+            if (labData != null)
+            {
+                existingDirection.LaboratoryId = labData.Id;
+            }
+            else
+            {
+                labData = new LaboratoryData { Name = updatedDirectionDto.Laboratory };
+                _dbContext.LaboratoryDatas.Add(labData);
+                await _dbContext.SaveChangesAsync();
+                existingDirection.LaboratoryId = labData.Id;
+            }
+
+            var department = await _dbContext.Departments.FirstOrDefaultAsync(d => d.Name == updatedDirectionDto.DepartmentName);
+            if (department != null)
+            {
+                existingDirection.DepartmentId = department.Id;
+            }
+            else
+            {
+                department = new Department { Name = updatedDirectionDto.DepartmentName };
+                _dbContext.Departments.Add(department);
+                await _dbContext.SaveChangesAsync();
+                existingDirection.DepartmentId = department.Id;
+            }
+
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task DeleteDirection(int directionId)
+        {
+            var direction = await _dbContext.Directions
+                .Include(d => d.DirectionStatusHistory)
+                .Include(d => d.Indicators)
+                .FirstOrDefaultAsync(d => d.Id == directionId);
+
+            if (direction == null)
+            {
+                throw new InvalidOperationException("Direction not found.");
+            }
+
+            _dbContext.Directions.Remove(direction);
+            await _dbContext.SaveChangesAsync();
+        }
 
         private async Task HandleDirection(Direction direction)
         {
@@ -467,7 +682,12 @@ namespace MyApi.Services
                     });
                 }
 
-                existingDirection.Indicators.Clear();
+                // Clear existing indicators only if they belong to the current direction
+                var existingIndicators = await _dbContext.Indicators
+                    .Where(i => i.DirectionId == existingDirection.Id)
+                    .ToListAsync();
+                _dbContext.Indicators.RemoveRange(existingIndicators);
+
                 foreach (var indicator in direction.Indicators)
                 {
                     Console.WriteLine($"Adding Indicator ID: {indicator.Id}");
