@@ -1,23 +1,23 @@
-### Данный проект выполнялся в рамках Дипломного проектирования в БГУИР, факультета КСиС
-### Требования по проекту были получены при прохождении преддипломной практики в ОИПИ НАН Беларуси
+### This project was carried out as part of the Diploma Project at BSUIR, Faculty of Computer Systems and Networks
+### The project requirements were obtained during the pre-diploma internship at UIIP NAS of Belarus
 
 ---
 
-# Веб-приложение для тестирования лабораторно-исследовательской системы
+# Web Application for Testing Laboratory Information Systems
 
-## Описание
-Это веб-приложение разработано для мануального процесса тестирования медицинских лабораторно-исследовательских систем (ЛИС). Приложение помогает повысить точность и надежность работы ЛИС.
+## Description
+This web application is designed for the manual testing process of medical Laboratory Information Systems (LIS). The application helps to increase the accuracy and reliability of LIS operations.
 
-## Основные фишки
-- **Авторизация** через Keycloak для обеспечения безопасности данных.
-- **Получение направлений** из базы данных.
-- **Синхронизация** с внешней лабораторно-исследовательской системой.
-- **Просмотр детальной информации** о направлениях.
-- **Эмуляция лабораторных анализов** для тестирования.
-- **Управление результатами анализов** с возможностью редактирования.
+## Key Features
+- **Authorization** through Keycloak to ensure data security.
+- **Retrieving directions** from the database.
+- **Synchronization** with an external laboratory information system.
+- **Viewing detailed information** about directions.
+- **Emulation of laboratory analyses** for testing.
+- **Managing analysis results** with editing capabilities.
 
-## Технологический стек
+## Technology Stack
 - **Backend**: .NET Core, C#
 - **Frontend**: Vue.js, Quasar Framework
-- **База данных**: PostgreSQL
-- **Аутентификация и авторизация**: Keycloak
+- **Database**: PostgreSQL
+- **Authentication and Authorization**: Keycloak
